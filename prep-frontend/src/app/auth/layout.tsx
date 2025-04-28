@@ -2,8 +2,8 @@ import type React from "react"
 import { Toaster } from "sonner"
 
 export const metadata = {
-  title: "Authentication - PeerPulse",
-  description: "Sign in or create an account on PeerPulse",
+  title: "Authentication - peerfo",
+  description: "Sign in or create an account on peerfo",
 }
 
 export default function AuthLayout({

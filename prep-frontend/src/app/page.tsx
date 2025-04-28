@@ -1,5 +1,14 @@
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import {
+  ArrowRightIcon,
+  UserIcon,
+  TimeIcon,
+  CheckCircleIcon,
+  PlayIcon,
+  StarIcon,
+  CheckIcon,
+} from "@/components/ui/icons"
+import { MockInterviewCard } from "@/components/mock-interview-card"
 
 export default function Home() {
   return (
@@ -27,7 +36,7 @@ export default function Home() {
                 className="relative inline-flex h-12 overflow-hidden rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 p-[1px]"
               >
                 <span className="relative flex h-full w-full items-center justify-center rounded-full bg-white px-8 text-sm font-medium text-purple-700 transition-all duration-300 ease-out hover:bg-opacity-0 hover:text-white dark:bg-gray-950 dark:text-purple-300 dark:hover:bg-opacity-0 dark:hover:text-white">
-                  Schedule Interview <ArrowRight className="ml-2 h-4 w-4" />
+                  Schedule Interview <ArrowRightIcon className="ml-2 h-4 w-4" />
                 </span>
               </Link>
               <Link
@@ -42,49 +51,7 @@ export default function Home() {
           </div>
           <div className="hidden lg:block lg:w-1/2">
             <div className="relative ml-10 mt-10">
-              <div className="absolute -left-4 -top-4 h-72 w-72 rounded-3xl bg-purple-100/50 backdrop-blur-sm dark:bg-purple-900/10"></div>
-              <div className="absolute -right-4 -bottom-4 h-72 w-72 rounded-3xl bg-indigo-100/50 backdrop-blur-sm dark:bg-indigo-900/10"></div>
-              <div className="relative rounded-3xl bg-white p-6 shadow-[0_20px_50px_rgba(8,_112,_184,_0.05)] dark:bg-gray-800">
-                <div className="flex items-center space-x-4">
-                  <div className="h-12 w-12 rounded-full bg-purple-50 p-2 dark:bg-purple-900/20">
-                    <svg
-                      className="h-8 w-8 text-purple-600 dark:text-purple-300"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M17 8C17 10.7614 14.7614 13 12 13C9.23858 13 7 10.7614 7 8C7 5.23858 9.23858 3 12 3C14.7614 3 17 5.23858 17 8Z"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                      <path
-                        d="M3 21C3 18.2386 7.02944 16 12 16C16.9706 16 21 18.2386 21 21"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Mock Interview</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Today at 3:00 PM</p>
-                  </div>
-                </div>
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-700/50">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">Technical Interview with Alex</p>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Duration</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">60 minutes</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Focus</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">System Design</span>
-                  </div>
-                </div>
-              </div>
+              <MockInterviewCard />
             </div>
           </div>
         </div>
@@ -119,7 +86,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="font-serif text-3xl font-normal text-gray-900 dark:text-white sm:text-4xl">
-              Why Choose PeerPulse
+              Why Choose peerfo
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-xl text-gray-500 dark:text-gray-400">
               The perfect environment for technical interview practice
@@ -130,27 +97,7 @@ export default function Home() {
             <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-b from-white to-gray-50 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:from-gray-800 dark:to-gray-900">
               <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 opacity-70 blur-3xl transition-all duration-300 group-hover:opacity-100 dark:from-purple-900/20 dark:to-purple-900/10"></div>
               <div className="relative mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full bg-purple-50 dark:bg-purple-900/20">
-                <svg
-                  className="h-8 w-8 text-purple-600 dark:text-purple-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 8V12L14.5 14.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M5.5 12C5.5 8.41 8.41 5.5 12 5.5C15.59 5.5 18.5 8.41 18.5 12C18.5 15.59 15.59 18.5 12 18.5C8.41 18.5 5.5 15.59 5.5 12Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <TimeIcon className="h-8 w-8 text-purple-600 dark:text-purple-300" />
               </div>
               <h3 className="font-serif text-xl font-normal text-gray-900 dark:text-white">Flexible Scheduling</h3>
               <p className="mt-4 text-gray-500 dark:text-gray-400">
@@ -161,24 +108,7 @@ export default function Home() {
             <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-b from-white to-gray-50 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:from-gray-800 dark:to-gray-900">
               <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 opacity-70 blur-3xl transition-all duration-300 group-hover:opacity-100 dark:from-indigo-900/20 dark:to-indigo-900/10"></div>
               <div className="relative mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/20">
-                <svg
-                  className="h-8 w-8 text-indigo-600 dark:text-indigo-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M17 8C17 10.7614 14.7614 13 12 13C9.23858 13 7 10.7614 7 8C7 5.23858 9.23858 3 12 3C14.7614 3 17 5.23858 17 8Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M3 21C3 18.2386 7.02944 16 12 16C16.9706 16 21 18.2386 21 21"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <UserIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-300" />
               </div>
               <h3 className="font-serif text-xl font-normal text-gray-900 dark:text-white">Diverse Peer Network</h3>
               <p className="mt-4 text-gray-500 dark:text-gray-400">
@@ -189,25 +119,7 @@ export default function Home() {
             <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-b from-white to-gray-50 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:from-gray-800 dark:to-gray-900">
               <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 opacity-70 blur-3xl transition-all duration-300 group-hover:opacity-100 dark:from-blue-900/20 dark:to-blue-900/10"></div>
               <div className="relative mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/20">
-                <svg
-                  className="h-8 w-8 text-blue-600 dark:text-blue-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M8.5 11L11.5 14L16 9"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                </svg>
+                <CheckCircleIcon className="h-8 w-8 text-blue-600 dark:text-blue-300" />
               </div>
               <h3 className="font-serif text-xl font-normal text-gray-900 dark:text-white">Structured Feedback</h3>
               <p className="mt-4 text-gray-500 dark:text-gray-400">
@@ -234,41 +146,7 @@ export default function Home() {
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 rounded-full bg-purple-100 opacity-90 blur-lg"></div>
                       <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
-                        <svg
-                          className="h-8 w-8 text-purple-600"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M8 2V5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M16 2V5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M3.5 9.08997H20.5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        <TimeIcon className="h-8 w-8 text-purple-600" />
                       </div>
                     </div>
                     <div>
@@ -304,24 +182,7 @@ export default function Home() {
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 rounded-full bg-indigo-100 opacity-90 blur-lg"></div>
                       <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
-                        <svg
-                          className="h-8 w-8 text-indigo-600"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M17 8C17 10.7614 14.7614 13 12 13C9.23858 13 7 10.7614 7 8C7 5.23858 9.23858 3 12 3C14.7614 3 17 5.23858 17 8Z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                          />
-                          <path
-                            d="M3 21C3 18.2386 7.02944 16 12 16C16.9706 16 21 18.2386 21 21"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                          />
-                        </svg>
+                        <UserIcon className="h-8 w-8 text-indigo-600" />
                       </div>
                     </div>
                     <div>
@@ -359,28 +220,7 @@ export default function Home() {
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 rounded-full bg-blue-100 opacity-90 blur-lg"></div>
                       <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
-                        <svg
-                          className="h-8 w-8 text-blue-600"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M9.1 12V10.5C9.1 8.5 10.6 7.6 12.4 8.7L13.7 9.4L15 10.1C16.8 11.2 16.8 13 15 14.1L13.7 14.8L12.4 15.5C10.6 16.6 9.1 15.7 9.1 13.7V12Z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeMiterlimit="10"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        <PlayIcon className="h-8 w-8 text-blue-600" />
                       </div>
                     </div>
                     <div>
@@ -418,25 +258,7 @@ export default function Home() {
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 rounded-full bg-green-100 opacity-90 blur-lg"></div>
                       <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
-                        <svg
-                          className="h-8 w-8 text-green-600"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M8.5 11L11.5 14L16 9"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                          />
-                        </svg>
+                        <CheckCircleIcon className="h-8 w-8 text-green-600" />
                       </div>
                     </div>
                     <div>
@@ -471,22 +293,7 @@ export default function Home() {
               <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 opacity-70 blur-3xl transition-all duration-300 group-hover:opacity-100 dark:from-purple-900/20 dark:to-purple-900/10"></div>
               <div className="relative flex space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    className="h-5 w-5 text-yellow-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 17.75L5.82802 20.995L7.00702 14.122L2.00702 9.25495L8.90702 8.25495L11.993 2.00195L15.079 8.25495L21.979 9.25495L16.979 14.122L18.158 20.995L12 17.75Z"
-                      fill="currentColor"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <StarIcon key={star} className="h-5 w-5 text-yellow-400" />
                 ))}
               </div>
               <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
@@ -507,22 +314,7 @@ export default function Home() {
               <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 opacity-70 blur-3xl transition-all duration-300 group-hover:opacity-100 dark:from-indigo-900/20 dark:to-indigo-900/10"></div>
               <div className="relative flex space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    className="h-5 w-5 text-yellow-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 17.75L5.82802 20.995L7.00702 14.122L2.00702 9.25495L8.90702 8.25495L11.993 2.00195L15.079 8.25495L21.979 9.25495L16.979 14.122L18.158 20.995L12 17.75Z"
-                      fill="currentColor"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <StarIcon key={star} className="h-5 w-5 text-yellow-400" />
                 ))}
               </div>
               <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
@@ -543,22 +335,7 @@ export default function Home() {
               <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 opacity-70 blur-3xl transition-all duration-300 group-hover:opacity-100 dark:from-blue-900/20 dark:to-blue-900/10"></div>
               <div className="relative flex space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    className="h-5 w-5 text-yellow-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 17.75L5.82802 20.995L7.00702 14.122L2.00702 9.25495L8.90702 8.25495L11.993 2.00195L15.079 8.25495L21.979 9.25495L16.979 14.122L18.158 20.995L12 17.75Z"
-                      fill="currentColor"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <StarIcon key={star} className="h-5 w-5 text-yellow-400" />
                 ))}
               </div>
               <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
@@ -597,67 +374,28 @@ export default function Home() {
                     <div>
                       <h3 className="font-serif text-3xl font-normal">Ready to level up?</h3>
                       <p className="mt-4 text-purple-100">
-                        Join thousands of professionals who are improving their interview skills with PeerPulse.
+                        Join thousands of professionals who are improving their interview skills with peerfo.
                       </p>
                     </div>
 
                     <div className="mt-8 space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                          <svg
-                            className="h-4 w-4 text-white"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M5 12L10 17L19 8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          <CheckIcon className="h-4 w-4 text-white" />
                         </div>
                         <p className="text-sm text-purple-100">Personalized matching with peers</p>
                       </div>
 
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                          <svg
-                            className="h-4 w-4 text-white"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M5 12L10 17L19 8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          <CheckIcon className="h-4 w-4 text-white" />
                         </div>
                         <p className="text-sm text-purple-100">Structured feedback framework</p>
                       </div>
 
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                          <svg
-                            className="h-4 w-4 text-white"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M5 12L10 17L19 8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          <CheckIcon className="h-4 w-4 text-white" />
                         </div>
                         <p className="text-sm text-purple-100">Flexible scheduling options</p>
                       </div>
@@ -680,15 +418,7 @@ export default function Home() {
                       className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-purple-600/20 transition-all hover:shadow-xl hover:shadow-purple-600/30"
                     >
                       Schedule Now
-                      <svg className="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          d="M5 12H19M19 12L12 5M19 12L12 19"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      <ArrowRightIcon className="ml-2 h-4 w-4" />
                     </Link>
                     <Link
                       href="#features"

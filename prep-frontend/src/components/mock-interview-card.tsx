@@ -1,8 +1,9 @@
-import { UserIcon } from "./ui/icons"
+import { UserIcon } from "@/components/ui/icons"
+
 interface MockInterviewCardProps {
   title?: string
   time?: string
-  interviewWith?: string
+  interviewWith?: string // Now optional and not used by default
   duration?: string
   focus?: string
   className?: string
@@ -32,7 +33,7 @@ export function MockInterviewCard({
         </div>
         <div className="mt-6 space-y-4">
           <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-700/50">
-            <p className="text-sm text-gray-700 dark:text-gray-300">Technical Interview with {interviewWith}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">Matching with peers arriving at the same time</p>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-gray-500 dark:text-gray-400">Duration</span>

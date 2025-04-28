@@ -34,7 +34,7 @@ export default function RootLayout({
               <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center">
                   <Link href="/" className="text-xl font-serif text-gray-900">
-                    Peer<span className="text-purple-600">Pulse</span>
+                    peer<span className="text-purple-600">fo</span>
                   </Link>
                 </div>
                 <nav className="hidden space-x-8 md:flex">
@@ -96,7 +96,7 @@ export default function RootLayout({
                   </div>
                   <div className="mt-8 md:order-1 md:mt-0">
                     <p className="text-center text-base text-gray-400">
-                      &copy; {new Date().getFullYear()} PeerPulse. All rights reserved.
+                      &copy; {new Date().getFullYear()} peerfo. All rights reserved.
                     </p>
                   </div>
                 </div>

@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
 
           <div className="mt-6">
             <Link href="/" className="text-xl font-serif text-gray-900 dark:text-white">
-              Peer<span className="text-purple-600">Pulse</span>
+              peer<span className="text-purple-600">fo</span>
             </Link>
             <h1 className="mt-6 font-serif text-3xl font-normal text-gray-900 dark:text-white">Reset your password</h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">

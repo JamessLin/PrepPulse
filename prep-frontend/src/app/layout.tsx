@@ -2,7 +2,7 @@ import type React from "react"
 import ClientLayout from "./clientLayout"
 
 export const metadata = {
-  title: "PeerPulse - Mock Interview Platform",
+  title: "peerfo - Mock Interview Platform",
   description: "Schedule peer mock interviews to improve your technical interview skills",
 }
 
