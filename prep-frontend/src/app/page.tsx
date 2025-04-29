@@ -31,14 +31,13 @@ export default function Home() {
               Connect with peers, practice interviews, and grow together. Free, flexible, and focused on your success.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
-              <Link
-                href="/schedule"
-                className="relative inline-flex h-12 overflow-hidden rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 p-[1px]"
-              >
-                <span className="relative flex h-full w-full items-center justify-center rounded-full bg-white px-8 text-sm font-medium text-purple-700 transition-all duration-300 ease-out hover:bg-opacity-0 hover:text-white dark:bg-gray-950 dark:text-purple-300 dark:hover:bg-opacity-0 dark:hover:text-white">
-                  Schedule Interview <ArrowRightIcon className="ml-2 h-4 w-4" />
-                </span>
-              </Link>
+            <Link
+              href="/schedule"
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-400 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-purple-600/20 transition-all hover:shadow-xl hover:shadow-purple-600/30"
+            >
+              Schedule Now
+              <ArrowRightIcon className="ml-2 h-4 w-4" />
+            </Link>
               <Link
                 href="#features"
                 className="relative inline-flex h-12 overflow-hidden rounded-full border border-gray-200 p-[1px] dark:border-gray-800"
