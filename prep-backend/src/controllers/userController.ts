@@ -44,7 +44,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Update profile in Supabase
+ 
     const { data, error } = await supabase
       .from('profiles')
       .update({
