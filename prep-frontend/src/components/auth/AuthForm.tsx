@@ -27,6 +27,9 @@ export function AuthForm({
     firstName: "",
     lastName: "",
   })
+
+  
+  //TODO: Add a Password Confirmation field for sign up
   
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

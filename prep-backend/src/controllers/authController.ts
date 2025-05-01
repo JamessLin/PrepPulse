@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 
+//FIXME: Prevent user from signing in twice with the same email address.
+// BUG: ISSUE 2.2 Take a look on what is preventing First and Last name from being saved in the database
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, firstName, lastName } = req.body;

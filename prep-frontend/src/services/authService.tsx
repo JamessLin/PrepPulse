@@ -1,6 +1,9 @@
 // Services for handling authentication API calls
 import { AuthFormData } from "@/lib/types";
 
+
+
+// BUG: ISSUE 2.2 Take a look on what is preventing First and Last name from being saved in the database
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 /**
