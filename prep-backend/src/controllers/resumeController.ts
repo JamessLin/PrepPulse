@@ -16,12 +16,12 @@ export const upload = multer({
             fileSize: 5 * 1024 * 1024, // 5 MB limit
         },
         fileFilter: (req, file, cb) => {
-            const allowedMimes = ['application/pdf']; //TODO: Maybe support more file types in the future
+            const allowedMimes = ['application/pdf']; //FIXME: Only PDF file types for now
             // const allowedMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
             if (allowedMimes.includes(file.mimetype)) {
                 cb(null, true);
             } else {
-                cb(new Error('Invalid file type. Only PDF, DOC, and DOCX files are allowed.'));
+                cb(new Error('Invalid file type. Only PDF files are allowed.'));
             }
         }
     }
@@ -76,7 +76,7 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
       }
 
       // Set sharing permissions flag (default: private)
-      const isPublic = req.body.isPublic === 'true';
+      const isPublic = req.body.isPublic === 'true' || false;
 
           // Update the user's profile with the resume URL and text content
       const { data: profileData, error: profileError } = await supabase.from('profiles').update({
@@ -216,3 +216,86 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
   }
 }
 
+
+export const getPeerResumes = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user || !user.id) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    // Get all public resumes
+    const { data: resumes, error: resumesError } = await supabase
+      .from('profiles')
+      .select('id, resume_url, resume_filename, full_name, title')
+      .eq('resume_is_public', true)
+      .not('resume_url', 'is', null);
+
+    if (resumesError) {
+      console.error('Error fetching peer resumes:', resumesError);
+      res.status(500).json({ error: 'Failed to fetch peer resumes' });
+      return;
+    }
+
+    res.status(200).json({ 
+      resumes: resumes || [] 
+    });
+  } catch (error) {
+    console.error('Get peer resumes error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+export const togglePublicStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user || !user.id) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    // Get the current resume status
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('resume_is_public, resume_url')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profileData) {
+      res.status(404).json({ error: 'Profile not found' });
+      return;
+    }
+
+    if (!profileData.resume_url) {
+      res.status(400).json({ error: 'No resume found to update' });
+      return;
+    }
+
+    const newPublicStatus = !profileData.resume_is_public;
+
+    // Update resume status
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        resume_is_public: newPublicStatus,
+        updated_at: new Date()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Profile update error:', updateError);
+      res.status(500).json({ error: 'Failed to update resume visibility' });
+      return;
+    }
+
+    res.status(200).json({ 
+      message: `Resume is now ${newPublicStatus ? 'public' : 'private'}`,
+      isPublic: newPublicStatus
+    });
+  } catch (error) {
+    console.error('Toggle public status error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
