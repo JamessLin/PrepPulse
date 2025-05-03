@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs'
 import * as path from 'path';
 import multer from 'multer';
-import { fileTypeFromBuffer } from 'file-type';
+import FileType from 'file-type';
 import { extractTextFromPdf } from '../utils/pdfUtils';
 import { profile } from 'console';
 
@@ -40,7 +40,7 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
           return;
       }
       const fileBuffer = req.file.buffer;
-      const fileTypeResult = await fileTypeFromBuffer(fileBuffer);
+      const fileTypeResult = await FileType.fromBuffer(fileBuffer);
       const fileExtension = fileTypeResult?.ext || 
         path.extname(req.file.originalname).substring(1);
   
