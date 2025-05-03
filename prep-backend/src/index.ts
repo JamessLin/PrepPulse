@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
-// import resumeRoutes from './routes/resumeRoutes';
+import resumeRoutes from './routes/resumeRoutes';
 // import interviewRoutes from './routes/interviewRoute';
 dotenv.config();
 
@@ -26,6 +26,10 @@ app.use(cors({
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/resume', resumeRoutes);
+
+
+
 // app.use('/api/resume', resumeRoutes);
 // app.use('/api/interview', inte); // Assuming interview routes are in resumeRoutes for now
 

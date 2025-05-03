@@ -17,7 +17,7 @@ interface Question {
 }
 
 /**
- * Generates mock interview questions for a resume (to be replaced with AI in Task 5.3).
+ * Generates mock interview questions for a resume (Task 5.3).
  * @param req - Request with resumeId param
  * @param res - Response with questions array
  */

@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { format, addDays, startOfWeek, addWeeks, isSameDay } from "date-fns"
+import { format, addDays, startOfWeek, addWeeks, isSameDay, startOfDay } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { CalendarIcon, ClockIcon, CheckIcon } from "@/components/ui/icons"
+import { Button } from "@/components/ui/button"
 
 // Fixed time slots for every day
 const TIME_SLOTS = ["7:00 AM", "11:00 AM", "3:00 PM", "9:00 PM"]
@@ -17,23 +18,43 @@ const INTERVIEW_TYPES = [
   { id: "system", name: "System Design", description: "Architecture and large-scale system design" },
 ]
 
-// Mock available slots (in a real app, this would come from an API)
-const getRandomAvailability = () => {
-  return TIME_SLOTS.filter(() => Math.random() > 0.3)
+const getAvailableSlots = (date: Date) => {
+  const now = new Date()
+
+  return TIME_SLOTS.map((slot) => {
+    const [hourStr, minuteStrPart] = slot.split(":")
+    const hour = parseInt(hourStr, 10)
+    const minute = parseInt(minuteStrPart, 10)
+    const isPM = slot.toLowerCase().includes("pm")
+
+    const slotDate = new Date(date)
+    slotDate.setHours(isPM && hour !== 12 ? hour + 12 : hour === 12 && !isPM ? 0 : hour)
+    slotDate.setMinutes(minute)
+    slotDate.setSeconds(0)
+    slotDate.setMilliseconds(0)
+
+    const isDisabled = slotDate.getTime() - now.getTime() < 60 * 60 * 1000 // less than 1 hour ahead
+
+    return { time: slot, disabled: isDisabled }
+  })
 }
 
+
 export default function SchedulePage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const today = new Date()
+  const [currentDate, setCurrentDate] = useState(today)
+  // Initialize selectedDate to today
+  const [selectedDate, setSelectedDate] = useState<Date>(today)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<string>("technical")
-
+  
+  const maxBookingDate = addDays(today, 14)
+  
   // Generate dates for the week view
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Start from Monday
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i))
 
-  // Mock available time slots for the selected date
-  const availableSlots = selectedDate ? getRandomAvailability() : []
+  const availableSlots = selectedDate ? getAvailableSlots(selectedDate) : []
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
@@ -45,13 +66,19 @@ export default function SchedulePage() {
   }
 
   const handlePrevWeek = () => {
-    setCurrentDate(addWeeks(currentDate, -1))
+    const prevWeekStart = startOfWeek(addWeeks(currentDate, -1), { weekStartsOn: 1 })
+    if (prevWeekStart >= startOfWeek(today, { weekStartsOn: 1 })) {
+      setCurrentDate(addWeeks(currentDate, -1))
+    }
   }
-
+  
   const handleNextWeek = () => {
-    setCurrentDate(addWeeks(currentDate, 1))
+    const nextWeekStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
+    if (nextWeekStart <= maxBookingDate) {
+      setCurrentDate(addWeeks(currentDate, 1))
+    }
   }
-
+  
   const handleTypeSelect = (typeId: string) => {
     setSelectedType(typeId)
   }
@@ -67,7 +94,7 @@ export default function SchedulePage() {
     })
 
     // Reset selections
-    setSelectedDate(null)
+    setSelectedDate(today)
     setSelectedTime(null)
   }
 
@@ -136,36 +163,69 @@ export default function SchedulePage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handlePrevWeek}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={handleNextWeek}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
+              <Button
+                onClick={handlePrevWeek}
+                disabled={startOfWeek(currentDate, { weekStartsOn: 1 }) <= startOfWeek(today, { weekStartsOn: 1 })}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+                  startOfWeek(currentDate, { weekStartsOn: 1 }) <= startOfWeek(today, { weekStartsOn: 1 })
+                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+
+              <Button
+                onClick={handleNextWeek}
+                disabled={startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 }) > maxBookingDate}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+                  startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 }) > maxBookingDate
+                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+
               </div>
             </div>
 
             <div className="grid grid-cols-7 gap-2">
-              {weekDates.map((date) => (
+            {weekDates.map((date) => {
+              const isPast = date < startOfDay(today)
+              const isTooFar = date > maxBookingDate
+              const isDisabled = isPast || isTooFar
+              const isToday = isSameDay(date, today)
+
+              return (
                 <button
                   key={date.toString()}
-                  onClick={() => handleDateSelect(date)}
+                  onClick={() => !isDisabled && handleDateSelect(date)}
+                  disabled={isDisabled}
                   className={`flex flex-col items-center justify-center rounded-2xl py-3 transition-all ${
-                    isSameDay(date, selectedDate || new Date(-1))
+                    isDisabled
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : isSameDay(date, selectedDate)
                       ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                      : "cursor-pointer bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
                   }`}
                 >
                   <span className="text-xs font-normal">{format(date, "EEE")}</span>
                   <span className="font-serif text-lg font-normal">{format(date, "d")}</span>
+                  
+                  {/* Today indicator dot */}
+                  {isToday && (
+                    <div 
+                      className={`mt-1 h-2 w-2 rounded-full ${
+                        isSameDay(date, selectedDate)
+                          ? "bg-white" 
+                          : "bg-purple-600"
+                      }`}
+                    />
+                  )}
                 </button>
-              ))}
+              )
+            })}
             </div>
 
             {selectedDate && (
@@ -175,20 +235,22 @@ export default function SchedulePage() {
                 </h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {availableSlots.length > 0 ? (
-                    availableSlots.map((time) => (
+                    availableSlots.map(({ time, disabled }) => (
                       <button
                         key={time}
-                        onClick={() => handleTimeSelect(time)}
+                        onClick={() => !disabled && handleTimeSelect(time)}
+                        disabled={disabled}
                         className={`flex items-center justify-center gap-2 rounded-2xl py-3 transition-all ${
                           selectedTime === time
                             ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
                             : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                        }`}
+                        } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
                         <ClockIcon className="h-4 w-4" />
                         {time}
                       </button>
                     ))
+                  
                   ) : (
                     <p className="col-span-full text-sm text-gray-500 dark:text-gray-400">
                       No available slots for this date. Please select another date.
