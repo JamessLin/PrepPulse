@@ -17,15 +17,9 @@ export function UserNav() {
   if (!isAuthenticated) {
     return (
       <>
+
         <Link
-          href="#"
-          onClick={toggleAuth} // For demo purposes only
-          className="rounded-full border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-purple-600 hover:text-purple-600"
-        >
-          Sign In
-        </Link>
-        <Link
-          href="#"
+          href="/auth"
           className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:shadow-lg"
         >
           Sign Up

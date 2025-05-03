@@ -31,31 +31,46 @@ export default function RootLayout({
         <ThemeProvider>
           {!pathname.startsWith("/auth") && (
             <header className="absolute top-0 left-0 right-0 z-10">
-              <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center">
+              <div className="mx-auto flex h-20 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+                {/* Left side - Logo */}
+                <div className="flex w-1/3 justify-start">
                   <Link href="/" className="text-xl font-serif text-gray-900">
                     peer<span className="text-purple-600">fo</span>
                   </Link>
                 </div>
-                <nav className="hidden space-x-8 md:flex">
-                  <Link href="/" className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600">
-                    Home
-                  </Link>
-                  <Link
-                    href="/schedule"
-                    className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
-                  >
-                    Schedule
-                  </Link>
-                  <Link href="#" className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600">
-                    Resources
-                  </Link>
-                  <Link href="#" className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600">
-                    FAQ
-                  </Link>
+
+                {/* Middle - Navigation */}
+                <nav className="flex w-1/3 justify-center">
+                  <div className="hidden space-x-8 md:flex">
+                    <Link
+                      href="/"
+                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
+                    >
+                      Home
+                    </Link>
+                    <Link
+                      href="/schedule"
+                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
+                    >
+                      Schedule
+                    </Link>
+                    <Link
+                      href="#"
+                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
+                    >
+                      Resources
+                    </Link>
+                    <Link
+                      href="#"
+                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
+                    >
+                      FAQ
+                    </Link>
+                  </div>
                 </nav>
-                <div className="flex items-center space-x-4">
-                  {/* User navigation */}
+
+                {/* Right side - User navigation */}
+                <div className="flex w-1/3 justify-end">
                   <UserNav />
                 </div>
               </div>
