@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useRef } from "react"
 import {
   format,
   addDays,
@@ -19,6 +19,9 @@ import { HowItWorksModal } from "@/components/schedule/HowItWorksModal"
 import { Confetti } from "@/components/ui/Confetti"
 import { Button } from "@/components/ui/button"
 import { InterviewType } from "@/lib/types"
+import { Check, CheckIcon, X } from "lucide-react"
+import { ConfirmationModal } from "@/components/schedule/ConfirmationModal"
+
 
 export const INTERVIEW_TYPES: InterviewType[] = [
   {
@@ -58,7 +61,8 @@ export default function SchedulePage() {
   const [isScheduled, setIsScheduled] = useState<boolean>(false)
   const [showConfetti, setShowConfetti] = useState<boolean>(false)
   const [showHowItWorks, setShowHowItWorks] = useState<boolean>(true)
-
+  const scheduleButtonRef = useRef<HTMLButtonElement>(null)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const maxBookingDate = addDays(today, 14)
 
   const handleDateSelect = (date: Date) => {
@@ -108,6 +112,7 @@ export default function SchedulePage() {
       })
 
       setIsScheduling(false)
+      setShowConfirmationModal(true)
 
       setTimeout(() => setShowConfetti(false), 3000)
       setTimeout(() => {
@@ -116,6 +121,20 @@ export default function SchedulePage() {
         setIsScheduled(false)
       }, 3000)
     }, 1000)
+  }
+
+
+
+  const handleCloseConfirmationModal = () => {
+    setShowConfirmationModal(false)
+
+    // Reset selections after closing the modal
+    setTimeout(() => {
+      setSelectedDate(today)
+      setSelectedTime('')
+
+      setIsScheduled(false)
+    }, 500)
   }
 
   const handleCancel = () => {
@@ -179,17 +198,18 @@ export default function SchedulePage() {
                 <Button
                   onClick={handleCancel}
                   variant="outline"
-                  className="rounded-full border border-gray-300"
+                  className="rounded-full border border-gray-300 bg-white px-6 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
+                  <X className="mr-2 inline-block h-4 w-4" />
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSchedule}
                   disabled={!selectedDate || !selectedTime || isScheduling || isScheduled}
-                  className={`rounded-full ${
+                  className={`relative rounded-full px-8 py-2.5 font-medium transition-all ${
                     selectedDate && selectedTime && !isScheduling && !isScheduled
-                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_4px_14px_rgba(107,70,193,0.3)]"
-                      : ""
+                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_4px_14px_rgba(107,70,193,0.3)] hover:shadow-[0_6px_20px_rgba(107,70,193,0.4)]"
+                      : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                   }`}
                 >
                   {isScheduling ? (
@@ -217,16 +237,30 @@ export default function SchedulePage() {
                       Scheduling...
                     </span>
                   ) : isScheduled ? (
-                    "Scheduled!"
+                    <span className="flex items-center justify-center">
+                      <Check className="mr-2 h-4 w-4" />
+                      Scheduled!
+                    </span>
                   ) : (
-                    "Schedule Interview"
+                    <>
+                      <CheckIcon className="mr-2 inline-block h-4 w-4" />
+                      Schedule Interview
+                    </>
                   )}
                 </Button>
               </div>
             </div>
+
           </div>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={handleCloseConfirmationModal}
+        interviewType={INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name || ""}
+        date={selectedDate}
+        time={selectedTime}
+      />
     </div>
   )
 }
