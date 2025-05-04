@@ -11,9 +11,7 @@ import { AuthContainer } from "@/components/auth/AuthContainer"//The box
 
 import { AuthFormData } from "@/lib/types"
 import { authService } from "@/services/authService"
-// import { resumeService } from "@/services/resumeService"
-
-
+import { resumeService } from "@/services/resumeService"
 
 export default function AuthPage() {
   const router = useRouter()
@@ -21,6 +19,8 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [registrationComplete, setRegistrationComplete] = useState(false)
   const [resumeUploaded, setResumeUploaded] = useState(false)
+  const [uploadingResume, setUploadingResume] = useState(false)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
 
   const handleAuth = async (formData: AuthFormData) => {
@@ -31,10 +31,8 @@ export default function AuthPage() {
         const response = await authService.login(formData)
         toast.success("Signed in successfully!")
         router.push("/")
-      }else {
-
+      } else {
         await authService.register(formData)
-
         setRegistrationComplete(true)
 
         const loginResponse = await authService.login({
@@ -44,16 +42,13 @@ export default function AuthPage() {
           lastName: formData.lastName,
         })
         setCurrentUser(loginResponse.user)
-
       }
-    }catch (error: any) {
+    } catch (error: any) {
       toast.error(error.message || (isSignIn ? "Login failed" : "Registration failed"))
-    }finally {
+    } finally {
       setIsLoading(false)
     }
   }
-
-
 
   const handleSocialAuth = (provider: string) => {
     setIsLoading(true)
@@ -70,14 +65,30 @@ export default function AuthPage() {
   }
 
   const handleResumeUpload = (file: File) => {
-    if (file) {
-      toast.success("Resume uploaded successfully!")
-      setResumeUploaded(true)
-    }
+    // Store the file for later upload
+    setResumeFile(file)
+    setResumeUploaded(true)
+    toast.success("Resume ready for upload")
   }
 
-  const handleContinue = () => {
-    router.push("/")
+  const handleContinue = async () => {
+    if (resumeFile) {
+      setUploadingResume(true)
+      try {
+        // Upload the resume with public visibility set to false by default
+        const response = await resumeService.uploadResume(resumeFile, false)
+        toast.success("Resume uploaded successfully!")
+        router.push("/")
+      } catch (error: any) {
+        toast.error(error.message || "Failed to upload resume")
+        // Still allow navigation even if upload fails
+        router.push("/")
+      } finally {
+        setUploadingResume(false)
+      }
+    } else {
+      router.push("/")
+    }
   }
 
   const skipResumeUpload = () => {
@@ -102,6 +113,7 @@ export default function AuthPage() {
           onResumeUpload={handleResumeUpload}
           onContinue={handleContinue}
           onSkip={skipResumeUpload}
+          isLoading={uploadingResume}
         />
       )}
       <AuthHero />

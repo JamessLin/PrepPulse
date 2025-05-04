@@ -7,8 +7,14 @@ import { FileUploadAreaProps, OnboardingStepProps } from "@/lib/types"
 /**
  * Onboarding step component for new user registration
  */
-export function OnboardingStep({ resumeUploaded, onResumeUpload, onContinue, onSkip }: OnboardingStepProps) {
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { //FIXME: Change to React.ChangeEvent<HTMLInputElement>
+export function OnboardingStep({ 
+  resumeUploaded, 
+  onResumeUpload, 
+  onContinue, 
+  onSkip,
+  isLoading = false
+}: OnboardingStepProps) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onResumeUpload(e.target.files[0])
     }
@@ -37,21 +43,22 @@ export function OnboardingStep({ resumeUploaded, onResumeUpload, onContinue, onS
         <div className="flex flex-row space-x-4">
             <Button
                 onClick={onSkip}
+                disabled={isLoading}
                 className="flex-1 rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             >
-            Skip for now
+              Skip for now
             </Button>
             <Button
                 onClick={onContinue}
-                disabled={!resumeUploaded}
+                disabled={!resumeUploaded || isLoading}
                 className={`flex-1 rounded-full ${
-                    resumeUploaded
+                    resumeUploaded && !isLoading
                     ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/20 hover:shadow-xl hover:shadow-purple-600/30"
                     : "bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                 }`}
             >
-            Continue
-          </Button>
+              {isLoading ? "Uploading..." : "Continue"}
+            </Button>
         </div>
 
         <p className="text-center text-xs text-gray-500 dark:text-gray-400">
@@ -93,13 +100,13 @@ function FileUploadArea({ resumeUploaded, onChange }: FileUploadAreaProps) {
             name="file-upload"
             type="file"
             className="sr-only"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf"
             onChange={onChange}
           />
         </label>
         <p className="pl-1">or drag and drop</p>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX up to 10MB</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">PDF only, up to 5MB</p>
       {resumeUploaded && (
         <div className="mt-4 flex items-center text-sm text-green-600">
           <svg className="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -109,7 +116,7 @@ function FileUploadArea({ resumeUploaded, onChange }: FileUploadAreaProps) {
               clipRule="evenodd"
             />
           </svg>
-          File uploaded successfully
+          File selected successfully
         </div>
       )}
     </div>

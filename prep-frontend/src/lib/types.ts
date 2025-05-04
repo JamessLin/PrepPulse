@@ -54,6 +54,7 @@ export interface OnboardingStepProps {
     onResumeUpload: (file: File) => void
     onContinue: () => void
     onSkip: () => void
+    isLoading?: boolean
 }
 
 /**

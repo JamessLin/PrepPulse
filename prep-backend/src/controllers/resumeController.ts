@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import * as path from 'path';
 import multer from 'multer';
 import FileType from 'file-type';
-import { extractTextFromPdf } from '../utils/pdfUtils';
+import { parseResumeFromPdf } from '../utils/pdfUtils';
 import { profile } from 'console';
 
 const storage = multer.memoryStorage();
@@ -68,21 +68,33 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
       let resumeText = null;
       if (req.file.mimetype === 'application/pdf') {
           try {
-              resumeText = await extractTextFromPdf(fileBuffer);
-          } catch (extractError) {
-              console.error('Error extracting text from PDF:', extractError);
-              // Continue even if text extraction fails
+              // Try to parse with the new function but fall back gracefully
+              const parsedResume = await parseResumeFromPdf(fileBuffer);
+              resumeText = parsedResume.rawText;
+              // Store structured data separately for future use when DB schema is updated
+              console.log('Successfully parsed resume structure:', {
+                name: parsedResume.name,
+                email: parsedResume.email,
+                education: parsedResume.education.length,
+                experience: parsedResume.experience.length,
+                skills: parsedResume.skills.length
+              });
+          } catch (parseError) {
+              console.error('Error parsing PDF resume:', parseError);
+              // Continue even if parsing fails
           }
       }
 
       // Set sharing permissions flag (default: private)
       const isPublic = req.body.isPublic === 'true' || false;
 
-          // Update the user's profile with the resume URL and text content
+      // Update the user's profile with the resume URL and text content
+      // Note: Not storing structured_data until DB schema is updated
       const { data: profileData, error: profileError } = await supabase.from('profiles').update({
           resume_url: publicUrl,
           resume_text: resumeText,
           resume_is_public: isPublic,
+          resume_filename: req.file.originalname,
           updated_at: new Date()
       }).eq('id', user.id);
 
@@ -155,7 +167,7 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
   try {
     const user = req.user;
 
-    if (!user || user.id) {
+    if (!user || !user.id) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
