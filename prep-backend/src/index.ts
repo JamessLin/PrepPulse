@@ -6,7 +6,10 @@ import morgan from 'morgan';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import resumeRoutes from './routes/resumeRoutes';
-// import interviewRoutes from './routes/interviewRoute';
+import scheduleRoutes from './routes/scheduleRoutes';
+
+
+
 dotenv.config();
 
 const app = express();
@@ -28,11 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/resume', resumeRoutes);
 
-
-
-// app.use('/api/resume', resumeRoutes);
-// app.use('/api/interview', inte); // Assuming interview routes are in resumeRoutes for now
-
+app.use('/api/schedules', scheduleRoutes);
 
 app.get('/', (req, res) => {
   res.send('Express + TypeScript + Supabase Backend');
