@@ -72,7 +72,7 @@ export default function SchedulePage() {
   useEffect(() => {
     const token = authService.getToken();
     if (!token) {
-      router.push('/login?redirect=/schedule');
+      router.push('/auth?redirect=/schedule');
     }
   }, [router]);
 
@@ -117,7 +117,7 @@ export default function SchedulePage() {
       if (isNaN(hours) || isNaN(minutes)) {
         throw new Error("Invalid time format")
       }
-      
+
       scheduledDateTime.setHours(hours, minutes, 0, 0)
       
       console.log("Scheduled date time:", scheduledDateTime)

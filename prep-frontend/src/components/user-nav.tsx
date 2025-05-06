@@ -1,118 +1,123 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { User, Settings, Calendar, LogOut, ChevronRight } from "lucide-react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { useRouter } from "next/navigation"
+import { User, Settings, Calendar, LogOut, ChevronRight, Clock, CheckCircle, Bell, CreditCard } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { authService } from "@/services/authService" // Adjust the path based on your project structure
+import { profileService } from "@/services/profileService"
+
+
 
 export function UserNav() {
-  // Mock authentication state - in a real app, this would come from your auth provider
+  const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<{ first_name?: string, last_name?: string, email?: string } | null>(null)
 
-  // Toggle auth state for demo purposes
-  const toggleAuth = () => setIsAuthenticated(!isAuthenticated)
+  useEffect(() => {
+    const loggedIn = authService.isAuthenticated();
+    setIsAuthenticated(loggedIn);
+  
+    if (loggedIn) {
+      const currentUser = authService.getCurrentUser(); // contains email
+      profileService
+        .getProfile()
+        .then((profile) => {
+          // Merge profile info with auth info
+          setUser({
+            email: currentUser?.email || null,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to load profile:", err);
+          // fallback to auth data only
+          setUser({ email: currentUser?.email || null });
+        });
+    }
+  }, []);
+  
+
+  const handleLogout = async () => {
+    await authService.logout()
+    setIsAuthenticated(false)
+    setUser(null)
+    router.push("/") // or to /auth
+  }
 
   if (!isAuthenticated) {
     return (
-      <>
-
-        <Link
-          href="/auth"
-          className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:shadow-lg"
-        >
-          Sign Up
-        </Link>
-      </>
+      <Link
+        href="/auth"
+        className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:shadow-lg"
+      >
+        Sign Up
+      </Link>
     )
   }
+  const initials = `${user?.first_name?.[0] || ''}${user?.last_name?.[0] || ''}`.toUpperCase();
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 ring-2 ring-purple-100">
             <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-            <AvatarFallback className="bg-purple-100 text-purple-600">JP</AvatarFallback>
+            <Avatar className="h-8 w-8 ring-2 ring-purple-100">
+            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white">
+              {initials || "?"}
+            </AvatarFallback>
+          </Avatar>
+
+
           </Avatar>
         </Button>
-      </SheetTrigger>
-      <SheetContent className="w-[300px] sm:w-[400px]">
-        <SheetHeader className="pb-6">
-          <SheetTitle className="font-serif text-2xl">Your Account</SheetTitle>
-        </SheetHeader>
-
-        <div className="flex items-center gap-4 border-b pb-6">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src="/placeholder.svg?height=64&width=64" alt="User" />
-            <AvatarFallback className="text-lg bg-purple-100 text-purple-600">JP</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="text-lg font-medium">Jane Pearson</p>
-            <p className="text-sm text-gray-500">jane.pearson@example.com</p>
-          </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56 overflow-hidden rounded-xl p-0" align="end">
+        {/* User info section with white background */}
+        <div className="border-b border-gray-100 bg-white px-4 py-3">
+          <p className="font-medium text-gray-900">
+            {user?.first_name || ''} {user?.last_name || ''}
+          </p>
+          <p className="text-xs text-gray-500">{user?.email || ''}</p>
         </div>
 
-        <div className="mt-6 space-y-1">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Interviews</h3>
-          <Link
-            href="/schedule"
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-gray-100"
-          >
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-purple-600" />
-              <span>Schedule Interview</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-          </Link>
-          <Link
-            href="/past-interviews"
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-gray-100"
-          >
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-purple-600" />
-              <span>Past Interviews</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-          </Link>
-        </div>
 
-        <div className="mt-6 space-y-1">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Account</h3>
-          <Link
-            href="/settings"
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-gray-100"
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="h-4 w-4 text-purple-600" />
-              <span>Settings</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+        <DropdownMenuItem asChild className="flex cursor-pointer items-center gap-2 py-2.5 pl-4">
+          <Link href="/profile">
+            <User className="h-4 w-4 text-gray-500" />
+            <span>Profile</span>
           </Link>
-          <Link
-            href="/profile"
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-gray-100"
-          >
-            <div className="flex items-center gap-3">
-              <User className="h-4 w-4 text-purple-600" />
-              <span>Profile</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-          </Link>
-        </div>
+        </DropdownMenuItem>
 
-        <div className="mt-6 pt-6 border-t">
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={toggleAuth} // For demo purposes only
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+        <DropdownMenuItem asChild className="flex cursor-pointer items-center gap-2 py-2.5 pl-4">
+          <Link href="/settings">
+            <Settings className="h-4 w-4 text-gray-500" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className="flex cursor-pointer items-center gap-2 py-2.5 pl-4 text-red-600 focus:bg-red-50 focus:text-red-600"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sign out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
