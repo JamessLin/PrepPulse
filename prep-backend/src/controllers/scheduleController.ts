@@ -337,7 +337,7 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     // Matchmaking: Look for another user with a pending schedule of the same interview type within the time window
-    const timeWindowMinutes = 15;
+    const timeWindowMinutes = 2;
     const earliestTime = new Date(scheduledTime);
     earliestTime.setMinutes(earliestTime.getMinutes() - timeWindowMinutes);
     

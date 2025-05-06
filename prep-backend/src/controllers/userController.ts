@@ -1,38 +1,43 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 
+
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
+
+    console.log('[getProfile] Requesting profile for user ID:', userId);
 
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
 
-    // Get user profile from Supabase
-    const { data, error } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+      .select('id, first_name, last_name, avatar_url')
+      .eq('id', userId).maybeSingle();
+
 
     if (error) {
+      console.error('[getProfile] Supabase error:', error.message);
       res.status(400).json({ error: error.message });
       return;
     }
 
-    if (!data) {
+    if (!profile) {
+      console.warn('[getProfile] No profile found for user ID:', userId);
       res.status(404).json({ error: 'Profile not found' });
       return;
     }
 
-    res.status(200).json({ profile: data });
-  } catch (error: any) {
-    console.error('Get profile error:', error);
+    res.status(200).json({ profile });
+  } catch (error) {
+    console.error('[getProfile] Unexpected error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 export const updateProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -44,7 +49,6 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
- 
     const { data, error } = await supabase
       .from('profiles')
       .update({
@@ -59,6 +63,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       .single();
 
     if (error) {
+      console.error('Supabase updateProfile error object:', error);
       res.status(400).json({ error: error.message });
       return;
     }
@@ -67,8 +72,9 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       message: 'Profile updated successfully',
       profile: data
     });
-  } catch (error: any) {
-    console.error('Update profile error:', error);
+  } catch (error) {
+    console.error('Unexpected updateProfile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+  
