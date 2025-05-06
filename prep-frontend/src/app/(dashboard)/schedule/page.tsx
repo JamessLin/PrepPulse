@@ -1,6 +1,6 @@
 "use client"
 
-import { useState,useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   format,
   addDays,
@@ -11,17 +11,18 @@ import {
   isToday
 } from "date-fns"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 import { InterviewTypeSelector } from "@/components/schedule/InterviewTypeSelector"
 import { DateSelector } from "@/components/schedule/DateSelector" 
 import { TimeSelector } from "@/components/schedule/TimeSelector"
-import { HowItWorksModal } from "@/components/schedule/HowItWorksModal"
 import { Confetti } from "@/components/ui/Confetti"
 import { Button } from "@/components/ui/button"
 import { InterviewType } from "@/lib/types"
 import { Check, CheckIcon, X } from "lucide-react"
 import { ConfirmationModal } from "@/components/schedule/ConfirmationModal"
-
+import { scheduleService } from "@/services/scheduleService"
+import { authService } from "@/services/authService"
 
 export const INTERVIEW_TYPES: InterviewType[] = [
   {
@@ -51,6 +52,7 @@ export const INTERVIEW_TYPES: InterviewType[] = [
 ]
 
 export default function SchedulePage() {
+  const router = useRouter()
   const today = new Date()
 
   const [currentDate, setCurrentDate] = useState<Date>(today)
@@ -61,9 +63,18 @@ export default function SchedulePage() {
   const [isScheduled, setIsScheduled] = useState<boolean>(false)
   const [showConfetti, setShowConfetti] = useState<boolean>(false)
   const [showHowItWorks, setShowHowItWorks] = useState<boolean>(true)
+  const [scheduleId, setScheduleId] = useState<string>("")
   const scheduleButtonRef = useRef<HTMLButtonElement>(null)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const maxBookingDate = addDays(today, 14)
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const token = authService.getToken();
+    if (!token) {
+      router.push('/login?redirect=/schedule');
+    }
+  }, [router]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
@@ -92,17 +103,53 @@ export default function SchedulePage() {
     setSelectedType(typeId)
   }
 
-  const handleSchedule = () => {
+
+  const handleSchedule = async () => {
     if (!selectedDate || !selectedTime) return
-
+  
     setIsScheduling(true)
-
-    setTimeout(() => {
+  
+    try {
+      const scheduledDateTime = new Date(selectedDate)
+      
+      const [hours, minutes] = selectedTime.split(':').map(num => parseInt(num, 10))
+      
+      if (isNaN(hours) || isNaN(minutes)) {
+        throw new Error("Invalid time format")
+      }
+      
+      scheduledDateTime.setHours(hours, minutes, 0, 0)
+      
+      console.log("Scheduled date time:", scheduledDateTime)
+      
+      // Create the ISO string
+      const scheduledTime = scheduledDateTime.toISOString()
+      
+      console.log("Scheduled time ISO:", scheduledTime)
+      
+      // Call the scheduleService to create a schedule
+      const response = await scheduleService.createSchedule(scheduledTime, selectedType)
+      
+      // Save the scheduleId for later
+      setScheduleId(response.scheduleId)
+      
+      // Save to localStorage for demo purposes
+      const storedSchedules = localStorage.getItem('userSchedules') 
+      const schedules = storedSchedules ? JSON.parse(storedSchedules) : []
+      schedules.push({
+        scheduleId: response.scheduleId,
+        scheduledTime,
+        interviewType: selectedType,
+        matched: false
+      })
+      localStorage.setItem('userSchedules', JSON.stringify(schedules))
+      
+      // Show success message
       const selectedTypeName = INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name
-
+      
       setIsScheduled(true)
       setShowConfetti(true)
-
+  
       toast.success("Interview Scheduled!", {
         description: `Your ${selectedTypeName} interview is scheduled for ${format(
           selectedDate,
@@ -110,20 +157,19 @@ export default function SchedulePage() {
         )} at ${selectedTime}.`,
         duration: 5000
       })
-
-      setIsScheduling(false)
+  
       setShowConfirmationModal(true)
-
       setTimeout(() => setShowConfetti(false), 3000)
-      setTimeout(() => {
-        setSelectedDate(today)
-        setSelectedTime("")
-        setIsScheduled(false)
-      }, 3000)
-    }, 1000)
+    } catch (error: any) {
+      console.error("Scheduling error:", error)
+      toast.error("Failed to schedule interview", {
+        description: error.message || "Please try again later",
+        duration: 5000
+      })
+    } finally {
+      setIsScheduling(false)
+    }
   }
-
-
 
   const handleCloseConfirmationModal = () => {
     setShowConfirmationModal(false)
@@ -132,9 +178,12 @@ export default function SchedulePage() {
     setTimeout(() => {
       setSelectedDate(today)
       setSelectedTime('')
-
       setIsScheduled(false)
     }, 500)
+  }
+
+  const handleViewSchedule = () => {
+    router.push(`/interview/${scheduleId}`)
   }
 
   const handleCancel = () => {
@@ -151,7 +200,6 @@ export default function SchedulePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50/40 to-white pt-32 pb-12 dark:from-gray-950 dark:to-gray-900">
       {showConfetti && <Confetti />}
-      {showHowItWorks && <HowItWorksModal onClose={() => setShowHowItWorks(false)} />}
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
@@ -250,7 +298,6 @@ export default function SchedulePage() {
                 </Button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -260,6 +307,8 @@ export default function SchedulePage() {
         interviewType={INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name || ""}
         date={selectedDate}
         time={selectedTime}
+        scheduleId={scheduleId}
+        onViewSchedule={handleViewSchedule}
       />
     </div>
   )

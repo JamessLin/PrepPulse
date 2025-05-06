@@ -1,8 +1,16 @@
 // Services for handling authentication API calls
 import { AuthFormData } from "@/lib/types";
 
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+// Authorization header name and prefix
+const AUTH_HEADER = 'Authorization';
+const TOKEN_PREFIX = 'Bearer ';
+
+// LocalStorage keys
+const TOKEN_KEY = 'token';
+const REFRESH_TOKEN_KEY = 'refreshToken';
+const USER_KEY = 'user';
 
 /**
  * Authentication service for handling API calls to the backend
@@ -63,9 +71,12 @@ export const authService = {
       
       // Store token in localStorage
       if (data.session) {
-        localStorage.setItem('token', data.session.access_token);
-        localStorage.setItem('refreshToken', data.session.refresh_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Store session data
+        authService.saveSession(data.session, data.user);
+        console.log('Auth: Login successful, session saved');
+      } else {
+        console.error('Auth: Login response missing session data');
+        throw new Error('Invalid login response from server');
       }
       
       return data;
@@ -76,39 +87,81 @@ export const authService = {
   },
 
   /**
+   * Save session data to localStorage
+   */
+  saveSession: (session: any, user: any) => {
+    try {
+      if (!session || !session.access_token || !session.refresh_token) {
+        console.error('Auth: Invalid session data', session);
+        return false;
+      }
+      
+      localStorage.setItem(TOKEN_KEY, session.access_token);
+      localStorage.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
+      
+      if (user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Auth: Failed to save session', error);
+      return false;
+    }
+  },
+
+  /**
    * Logout a user
    */
   logout: async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       
-      const response = await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      if (token) {
+        try {
+          const response = await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              [AUTH_HEADER]: `${TOKEN_PREFIX}${token}`,
+            },
+          });
 
-      const data = await response.json();
+          const data = await response.json();
+          
+          if (!response.ok) {
+            console.warn('Logout warning:', data.error);
+          }
+        } catch (apiError) {
+          console.warn('Logout API error:', apiError);
+          // Continue with local logout even if API call fails
+        }
+      }
       
       // Clear localStorage regardless of response
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      
-      if (!response.ok) {
-        console.warn('Logout warning:', data.error);
-      }
+      authService.clearSession();
       
       return true;
     } catch (error) {
       console.error('Logout error:', error);
       // Clear localStorage even if there's an error
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      authService.clearSession();
       return true;
+    }
+  },
+
+  /**
+   * Clear all session data from localStorage
+   */
+  clearSession: () => {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      return true;
+    } catch (error) {
+      console.error('Auth: Failed to clear session', error);
+      return false;
     }
   },
 
@@ -117,7 +170,7 @@ export const authService = {
    */
   refreshToken: async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
       
       if (!refreshToken) {
         throw new Error('No refresh token available');
@@ -136,16 +189,20 @@ export const authService = {
       const data = await response.json();
       
       if (!response.ok) {
+        // Clear invalid tokens
+        if (response.status === 401) {
+          authService.clearSession();
+        }
         throw new Error(data.error || 'Token refresh failed');
       }
       
       // Update tokens in localStorage
       if (data.session) {
-        localStorage.setItem('token', data.session.access_token);
-        localStorage.setItem('refreshToken', data.session.refresh_token);
+        authService.saveSession(data.session, data.user || authService.getCurrentUser());
+        return data;
+      } else {
+        throw new Error('Invalid refresh response from server');
       }
-      
-      return data;
     } catch (error) {
       console.error('Token refresh error:', error);
       throw error;
@@ -182,7 +239,7 @@ export const authService = {
    * Check if user is authenticated
    */
   isAuthenticated: () => {
-    const token = localStorage.getItem('token');
+    const token = authService.getToken();
     return !!token;
   },
 
@@ -190,7 +247,7 @@ export const authService = {
    * Get the current user
    */
   getCurrentUser: () => {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem(USER_KEY);
     if (!userStr) return null;
     
     try {
@@ -205,7 +262,22 @@ export const authService = {
    * Get auth token
    */
   getToken: () => {
-    return localStorage.getItem('token');
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch (error) {
+      console.error('Error getting token:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get auth headers for API requests
+   */
+  getAuthHeaders: () => {
+    const token = authService.getToken();
+    return token ? {
+      [AUTH_HEADER]: `${TOKEN_PREFIX}${token}`
+    } : {};
   },
 
   /**
@@ -231,9 +303,9 @@ export const authService = {
       
       // Store token in localStorage
       if (data.session) {
-        localStorage.setItem('token', data.session.access_token);
-        localStorage.setItem('refreshToken', data.session.refresh_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        authService.saveSession(data.session, data.user);
+      } else {
+        throw new Error(`Invalid ${provider} auth response`);
       }
       
       return data;
