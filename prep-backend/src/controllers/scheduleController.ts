@@ -32,6 +32,25 @@ export const createSchedule = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    // ✅ Prevent duplicate bookings at the same time
+    const { data: conflict, error: conflictError } = await supabase
+      .from('schedules')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('scheduled_time', scheduledDate.toISOString())
+      .in('status', ['pending', 'matched']);
+
+    if (conflictError) {
+      console.error('Error checking for existing schedule:', conflictError.message);
+      res.status(500).json({ error: 'Failed to validate existing schedules' });
+      return;
+    }
+
+    if (conflict && conflict.length > 0) {
+      res.status(400).json({ error: 'You already have an interview scheduled at this time' });
+      return;
+    }
+
     const { data, error } = await supabase
       .from('schedules')
       .insert({
