@@ -17,14 +17,18 @@ interface JoinInterviewResponse {
 interface ScheduleData {
   scheduledTime: string;
   interviewType?: string;
+  interviewMode?: string;
+  friendEmail?: string;
 }
 
 export const scheduleService = {
-  createSchedule: async (scheduledTime: string, interviewType?: string): Promise<ScheduleResponse> => {
+  createSchedule: async (scheduledTime: string, interviewType?: string, interviewMode?: string, friendEmail?: string): Promise<ScheduleResponse> => {
     try {
       // Add debug output
       console.log('Creating schedule for time:', scheduledTime);
-      console.log('Interview type:', interviewType || 'standard');
+      console.log('Interview type:', interviewType);
+      console.log('Interview mode:', interviewMode);
+      console.log('Friend email:', friendEmail);
       
       // Run auth debug utility
       const isAuthenticated = debugAuth();
@@ -57,6 +61,16 @@ export const scheduleService = {
       // Add interview type if provided
       if (interviewType) {
         scheduleData.interviewType = interviewType;
+      }
+
+      // Add interview mode if provided
+      if (interviewMode) {
+        scheduleData.interviewMode = interviewMode;
+      }
+
+      // Add friend email if provided
+      if (friendEmail) {
+        scheduleData.friendEmail = friendEmail;
       }
 
       console.log('Sending schedule request with token:', currentToken ? 'Token exists' : 'No token');
@@ -107,7 +121,6 @@ export const scheduleService = {
     }
   },
 
-  // Other methods remain the same...
   getSchedule: async (scheduleId: string) => {
     try {
       // Debug auth before making request
@@ -148,6 +161,8 @@ export const scheduleService = {
         throw new Error('User not authenticated');
       }
 
+      console.log('Joining interview with scheduleId:', scheduleId);
+
       const response = await fetch(`${API_URL}/schedules/join`, {
         method: 'POST',
         headers: {
@@ -157,15 +172,29 @@ export const scheduleService = {
         body: JSON.stringify({ scheduleId }),
       });
 
-      const data = await response.json();
+      console.log('Join interview API response status:', response.status);
+      const responseText = await response.text();
+      console.log('Raw API response:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse API response as JSON:', e);
+        throw new Error('Invalid response from server');
+      }
+
       if (response.status === 202) {
         throw new Error('Waiting for a match');
+      }
+      if (response.status === 408) {
+        throw new Error('No match found within 2 minutes. Please reschedule.');
       }
       if (!response.ok) {
         throw new Error(data.error || 'Failed to join interview');
       }
 
-      return data;
+      return data as JoinInterviewResponse;
     } catch (error: any) {
       console.error('Join interview error:', error);
       throw error;

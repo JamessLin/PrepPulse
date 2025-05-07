@@ -15,10 +15,11 @@ interface ConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
   interviewType: string
-  date: Date
-  time: string
+  date: Date | null
+  time: string | null
   scheduleId?: string
   onViewSchedule?: () => void
+  interviewMode: string
 }
 
 export function ConfirmationModal({
@@ -30,7 +31,7 @@ export function ConfirmationModal({
   scheduleId,
   onViewSchedule
 }: ConfirmationModalProps) {
-  const formattedDate = format(date, "EEEE, MMMM d, yyyy")
+  const formattedDate = date ? format(date, "EEEE, MMMM d, yyyy") : ""
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -73,6 +74,18 @@ export function ConfirmationModal({
             <p className="text-sm text-gray-700 dark:text-gray-300">
               You'll be notified when you're matched with a peer. Be sure to join the
               session 5 minutes before the scheduled time.
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Your {interviewType} interview has been scheduled for{" "}
+              {date && time && (
+                <>
+                  {format(date, "MMMM d, yyyy")} at {time}
+                </>
+              )}
+              .
             </p>
           </div>
         </div>

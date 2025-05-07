@@ -32,7 +32,6 @@ export const createSchedule = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    // ✅ Prevent duplicate bookings at the same time
     const { data: conflict, error: conflictError } = await supabase
       .from('schedules')
       .select('id')
@@ -96,7 +95,6 @@ export const getScheduleDetails = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Get schedule data
     const { data: schedule, error: scheduleError } = await supabase
       .from('schedules')
       .select('id, user_id, scheduled_time, interview_type, status')
@@ -109,7 +107,6 @@ export const getScheduleDetails = async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Check if this schedule is matched
     const { data: matchData, error: matchError } = await supabase
       .from('matches')
       .select('id, schedule_id_1, schedule_id_2, status')
@@ -117,7 +114,7 @@ export const getScheduleDetails = async (req: AuthRequest, res: Response): Promi
       .eq('status', 'active')
       .single();
 
-    if (matchError && matchError.code !== 'PGRST116') { // PGRST116 is "not found" error code
+    if (matchError && matchError.code !== 'PGRST116') {
       console.error('Error getting match data:', matchError.message);
       res.status(500).json({ error: 'Failed to get match data' });
       return;
@@ -125,10 +122,7 @@ export const getScheduleDetails = async (req: AuthRequest, res: Response): Promi
 
     let matchedWith = null;
     if (matchData) {
-      // Get the other user's ID
       const otherScheduleId = matchData.schedule_id_1 === id ? matchData.schedule_id_2 : matchData.schedule_id_1;
-      
-      // Get the other user's data
       const { data: otherSchedule, error: otherError } = await supabase
         .from('schedules')
         .select('user_id')
@@ -136,17 +130,16 @@ export const getScheduleDetails = async (req: AuthRequest, res: Response): Promi
         .single();
 
       if (!otherError && otherSchedule) {
-        // Get user details
         const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id, name')
+          .from('profiles')
+          .select('id, first_name, last_name')
           .eq('id', otherSchedule.user_id)
           .single();
 
         if (!userError && userData) {
           matchedWith = {
             userId: userData.id,
-            name: userData.name
+            name: `${userData.first_name} ${userData.last_name}` || 'Unknown'
           };
         }
       }
@@ -173,7 +166,6 @@ export const getUserSchedules = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Get all schedules for the user
     const { data: schedules, error: schedulesError } = await supabase
       .from('schedules')
       .select('id, scheduled_time, interview_type, status')
@@ -191,7 +183,6 @@ export const getUserSchedules = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Get all matches for these schedules
     const scheduleIds = schedules.map(s => s.id);
     const { data: matches, error: matchesError } = await supabase
       .from('matches')
@@ -205,7 +196,6 @@ export const getUserSchedules = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Create a mapping of schedule IDs to their matches
     const matchMap = new Map();
     if (matches) {
       for (const match of matches) {
@@ -215,14 +205,12 @@ export const getUserSchedules = async (req: AuthRequest, res: Response): Promise
       }
     }
 
-    // Prepare response data
     const result = await Promise.all(schedules.map(async (schedule) => {
       let matchedWith = null;
       
       if (matchMap.has(schedule.id)) {
         const otherScheduleId = matchMap.get(schedule.id);
         
-        // Get the other schedule
         const { data: otherSchedule, error: otherError } = await supabase
           .from('schedules')
           .select('user_id')
@@ -230,17 +218,16 @@ export const getUserSchedules = async (req: AuthRequest, res: Response): Promise
           .single();
 
         if (!otherError && otherSchedule) {
-          // Get user details
           const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, name')
+            .from('profiles')
+            .select('id, first_name, last_name')
             .eq('id', otherSchedule.user_id)
             .single();
 
           if (!userError && userData) {
             matchedWith = {
               userId: userData.id,
-              name: userData.name
+              name: `${userData.first_name} ${userData.last_name}` || 'Unknown'
             };
           }
         }
@@ -291,14 +278,12 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
     const now = new Date();
     const scheduledTime = new Date(schedule.scheduled_time);
     
-    // Check if the scheduled time is in the past
     if (now < scheduledTime) {
       res.status(400).json({ error: 'Interview time has not yet started' });
       return;
     }
 
     if (schedule.status !== 'pending') {
-      // Check if already matched
       const { data: existingMatch, error: existingMatchError } = await supabase
         .from('matches')
         .select('id, schedule_id_1, schedule_id_2, room_name, session_id, status')
@@ -307,9 +292,14 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
         .single();
 
       if (!existingMatchError && existingMatch) {
-        // Already matched, return session details
-        const apiKey = process.env.LIVEKIT_API_KEY!;
-        const apiSecret = process.env.LIVEKIT_API_SECRET!;
+        const apiKey = process.env.LIVEKIT_API_KEY;
+        const apiSecret = process.env.LIVEKIT_API_SECRET;
+
+        if (!apiKey || !apiSecret) {
+          console.error('LiveKit credentials are not configured');
+          res.status(500).json({ error: 'Server configuration error: LiveKit credentials missing' });
+          return;
+        }
 
         const token = new AccessToken(apiKey, apiSecret, {
           identity: user.id,
@@ -336,7 +326,6 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    // Matchmaking: Look for another user with a pending schedule of the same interview type within the time window
     const timeWindowMinutes = 2;
     const earliestTime = new Date(scheduledTime);
     earliestTime.setMinutes(earliestTime.getMinutes() - timeWindowMinutes);
@@ -370,7 +359,8 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
       if (updateError) {
         console.error('Error cancelling schedule:', updateError.message);
       }
-    }, 2 * 60 * 1000); // 2 minutes timeout
+      res.status(408).json({ message: 'No match found within 2 minutes. Please reschedule.' });
+    }, 2 * 60 * 1000);
 
     if (!potentialMatches || potentialMatches.length === 0) {
       res.status(202).json({ message: 'Waiting for a match' });
@@ -383,7 +373,6 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
     const roomName = `interview-${uuidv4()}`;
     const sessionId = uuidv4();
 
-    // Create match record
     const { data: matchData, error: createMatchError } = await supabase
       .from('matches')
       .insert({
@@ -404,7 +393,6 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    // Update both schedules to 'matched'
     const { error: updateError } = await supabase
       .from('schedules')
       .update({ status: 'matched', updated_at: new Date() })
@@ -412,12 +400,21 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
 
     if (updateError) {
       console.error('Error updating schedules:', updateError.message);
+      await supabase.from('matches').delete().eq('id', matchData.id);
       res.status(500).json({ error: 'Failed to update schedules' });
       return;
     }
 
-    const apiKey = process.env.LIVEKIT_API_KEY!;
-    const apiSecret = process.env.LIVEKIT_API_SECRET!;
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
+
+    if (!apiKey || !apiSecret) {
+      console.error('LiveKit credentials are not configured');
+      await supabase.from('matches').delete().eq('id', matchData.id);
+      await supabase.from('schedules').update({ status: 'pending', updated_at: new Date() }).eq('id', scheduleId);
+      res.status(500).json({ error: 'Server configuration error: LiveKit credentials missing' });
+      return;
+    }
 
     const token = new AccessToken(apiKey, apiSecret, {
       identity: user.id,

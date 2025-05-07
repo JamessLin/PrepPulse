@@ -16,10 +16,11 @@ import { useRouter } from "next/navigation"
 import { InterviewTypeSelector } from "@/components/schedule/InterviewTypeSelector"
 import { DateSelector } from "@/components/schedule/DateSelector" 
 import { TimeSelector } from "@/components/schedule/TimeSelector"
+import { InterviewModeSelector, InterviewMode } from "@/components/schedule/InterviewModeSelector"
 import { Confetti } from "@/components/ui/Confetti"
 import { Button } from "@/components/ui/button"
 import { InterviewType } from "@/lib/types"
-import { Check, CheckIcon, X } from "lucide-react"
+import { Check, CheckIcon, X, Users, Bot, UserPlus } from "lucide-react"
 import { ConfirmationModal } from "@/components/schedule/ConfirmationModal"
 import { scheduleService } from "@/services/scheduleService"
 import { authService } from "@/services/authService"
@@ -51,6 +52,38 @@ export const INTERVIEW_TYPES: InterviewType[] = [
   }
 ]
 
+// Interview modes
+const INTERVIEW_MODES: InterviewMode[] = [
+  {
+    id: "peer",
+    name: "Peer to Peer",
+    description: "Practice with another person seeking interview practice",
+    icon: <Users className="h-5 w-5" />,
+    color: "from-purple-600 to-indigo-600",
+    lightColor: "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+    darkColor: "bg-purple-600 text-white",
+  },
+  {
+    id: "ai",
+    name: "You vs AI",
+    description: "Practice with our advanced AI interviewer",
+    icon: <Bot className="h-5 w-5" />,
+    color: "from-blue-600 to-cyan-600",
+    lightColor: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    darkColor: "bg-blue-600 text-white",
+    badge: "Beta",
+  },
+  {
+    id: "friend",
+    name: "You vs Friend",
+    description: "Invite a specific person to interview you",
+    icon: <UserPlus className="h-5 w-5" />,
+    color: "from-emerald-600 to-teal-600",
+    lightColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    darkColor: "bg-emerald-600 text-white",
+  },
+]
+
 export default function SchedulePage() {
   const router = useRouter()
   const today = new Date()
@@ -59,6 +92,8 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(today)
   const [selectedTime, setSelectedTime] = useState<string>("")
   const [selectedType, setSelectedType] = useState<string>("technical")
+  const [selectedMode, setSelectedMode] = useState<string>("peer")
+  const [friendEmail, setFriendEmail] = useState<string>("")
   const [isScheduling, setIsScheduling] = useState<boolean>(false)
   const [isScheduled, setIsScheduled] = useState<boolean>(false)
   const [showConfetti, setShowConfetti] = useState<boolean>(false)
@@ -103,6 +138,12 @@ export default function SchedulePage() {
     setSelectedType(typeId)
   }
 
+  const handleModeSelect = (modeId: string) => {
+    setSelectedMode(modeId)
+    if (modeId !== "friend") {
+      setFriendEmail("")
+    }
+  }
 
   const handleSchedule = async () => {
     if (!selectedDate || !selectedTime) return
@@ -129,6 +170,7 @@ export default function SchedulePage() {
       
       // Call the scheduleService to create a schedule
       const response = await scheduleService.createSchedule(scheduledTime, selectedType)
+      //const response = await scheduleService.createSchedule(scheduledTime, selectedType, selectedMode, friendEmail)
       
       // Save the scheduleId for later
       setScheduleId(response.scheduleId)
@@ -140,18 +182,21 @@ export default function SchedulePage() {
         scheduleId: response.scheduleId,
         scheduledTime,
         interviewType: selectedType,
+        // interviewMode: selectedMode,
+        // friendEmail: friendEmail || undefined,
         matched: false
       })
       localStorage.setItem('userSchedules', JSON.stringify(schedules))
       
       // Show success message
       const selectedTypeName = INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name
+      const selectedModeName = INTERVIEW_MODES.find((mode) => mode.id === selectedMode)?.name
       
       setIsScheduled(true)
       setShowConfetti(true)
   
       toast.success("Interview Scheduled!", {
-        description: `Your ${selectedTypeName} interview is scheduled for ${format(
+        description: `Your ${selectedTypeName} interview (${selectedModeName}) is scheduled for ${format(
           selectedDate,
           "MMMM d, yyyy"
         )} at ${selectedTime}.`,
@@ -213,6 +258,16 @@ export default function SchedulePage() {
 
         <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-3">
           <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all dark:bg-gray-800 lg:col-span-1">
+            <div className="mb-8">
+              <InterviewModeSelector
+                modes={INTERVIEW_MODES}
+                selectedMode={selectedMode}
+                onSelectMode={handleModeSelect}
+                friendEmail={friendEmail}
+                onFriendEmailChange={setFriendEmail}
+              />
+            </div>
+            
             <InterviewTypeSelector
               interviewTypes={INTERVIEW_TYPES}
               selectedType={selectedType}
@@ -309,6 +364,7 @@ export default function SchedulePage() {
         time={selectedTime}
         scheduleId={scheduleId}
         onViewSchedule={handleViewSchedule}
+        interviewMode={INTERVIEW_MODES.find((mode) => mode.id === selectedMode)?.name || "Peer to Peer"}
       />
     </div>
   )

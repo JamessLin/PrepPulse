@@ -132,7 +132,7 @@ export interface InterviewType {
 export interface InterviewTypeSelectorProps {
     interviewTypes: InterviewType[]
     selectedType: string
-    onSelectType: (id: string) => void
+    onSelectType: (typeId: string) => void
 }
 
 
