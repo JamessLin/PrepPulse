@@ -275,6 +275,8 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
+    // TODO: Disabled for testing purposes, re-enable later
+    // FIXME: Double reminder to fix
     // const now = new Date();
     // const scheduledTime = new Date(schedule.scheduled_time);
     
