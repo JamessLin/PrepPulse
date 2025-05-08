@@ -1,4 +1,3 @@
-// Services for handling authentication API calls
 import { AuthFormData } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -7,10 +6,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const AUTH_HEADER = 'Authorization';
 const TOKEN_PREFIX = 'Bearer ';
 
-// LocalStorage keys
-const TOKEN_KEY = 'token';
-const REFRESH_TOKEN_KEY = 'refreshToken';
-const USER_KEY = 'user';
+// SessionStorage keys (will be prefixed with userId)
+const TOKEN_KEY_BASE = 'authToken';
+const REFRESH_TOKEN_KEY_BASE = 'refreshToken';
+const USER_KEY_BASE = 'user';
 
 /**
  * Authentication service for handling API calls to the backend
@@ -30,16 +29,16 @@ export const authService = {
           email: userData.email,
           password: userData.password,
           first_name: userData.firstName,
-          last_name: userData.lastName
+          last_name: userData.lastName,
         }),
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
-      
+
       return data;
     } catch (error) {
       console.error('Registration error:', error);
@@ -64,21 +63,20 @@ export const authService = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
-      
-      // Store token in localStorage
-      if (data.session) {
-        // Store session data
-        authService.saveSession(data.session, data.user);
-        console.log('Auth: Login successful, session saved');
+
+      // Store session data with userId
+      if (data.session && data.user && data.user.id) {
+        authService.saveSession(data.session, data.user, data.user.id);
+        console.log('Auth: Login successful, session saved for user:', data.user.id);
       } else {
-        console.error('Auth: Login response missing session data');
+        console.error('Auth: Login response missing session or user data');
         throw new Error('Invalid login response from server');
       }
-      
+
       return data;
     } catch (error) {
       console.error('Login error:', error);
@@ -87,22 +85,22 @@ export const authService = {
   },
 
   /**
-   * Save session data to localStorage
+   * Save session data to sessionStorage with userId prefix
    */
-  saveSession: (session: any, user: any) => {
+  saveSession: (session: any, user: any, userId: string) => {
     try {
-      if (!session || !session.access_token || !session.refresh_token) {
-        console.error('Auth: Invalid session data', session);
+      if (!session || !session.access_token || !session.refresh_token || !userId) {
+        console.error('Auth: Invalid session or userId data', { session, userId });
         return false;
       }
-      
-      localStorage.setItem(TOKEN_KEY, session.access_token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
-      
+
+      sessionStorage.setItem(`${TOKEN_KEY_BASE}_${userId}`, session.access_token);
+      sessionStorage.setItem(`${REFRESH_TOKEN_KEY_BASE}_${userId}`, session.refresh_token);
+
       if (user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        sessionStorage.setItem(`${USER_KEY_BASE}_${userId}`, JSON.stringify(user));
       }
-      
+
       return true;
     } catch (error) {
       console.error('Auth: Failed to save session', error);
@@ -113,10 +111,10 @@ export const authService = {
   /**
    * Logout a user
    */
-  logout: async () => {
+  logout: async (userId: string) => {
     try {
-      const token = authService.getToken();
-      
+      const token = authService.getToken(userId);
+
       if (token) {
         try {
           const response = await fetch(`${API_URL}/auth/logout`, {
@@ -128,7 +126,7 @@ export const authService = {
           });
 
           const data = await response.json();
-          
+
           if (!response.ok) {
             console.warn('Logout warning:', data.error);
           }
@@ -137,27 +135,26 @@ export const authService = {
           // Continue with local logout even if API call fails
         }
       }
-      
-      // Clear localStorage regardless of response
-      authService.clearSession();
-      
+
+      // Clear session data for this userId
+      authService.clearSession(userId);
+
       return true;
     } catch (error) {
       console.error('Logout error:', error);
-      // Clear localStorage even if there's an error
-      authService.clearSession();
+      authService.clearSession(userId);
       return true;
     }
   },
 
   /**
-   * Clear all session data from localStorage
+   * Clear session data for a specific user from sessionStorage
    */
-  clearSession: () => {
+  clearSession: (userId: string) => {
     try {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(`${TOKEN_KEY_BASE}_${userId}`);
+      sessionStorage.removeItem(`${REFRESH_TOKEN_KEY_BASE}_${userId}`);
+      sessionStorage.removeItem(`${USER_KEY_BASE}_${userId}`);
       return true;
     } catch (error) {
       console.error('Auth: Failed to clear session', error);
@@ -168,14 +165,14 @@ export const authService = {
   /**
    * Refresh the auth token
    */
-  refreshToken: async () => {
+  refreshToken: async (userId: string) => {
     try {
-      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-      
+      const refreshToken = sessionStorage.getItem(`${REFRESH_TOKEN_KEY_BASE}_${userId}`);
+
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
-      
+
       const response = await fetch(`${API_URL}/auth/refresh-token`, {
         method: 'POST',
         headers: {
@@ -187,18 +184,16 @@ export const authService = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        // Clear invalid tokens
         if (response.status === 401) {
-          authService.clearSession();
+          authService.clearSession(userId);
         }
         throw new Error(data.error || 'Token refresh failed');
       }
-      
-      // Update tokens in localStorage
-      if (data.session) {
-        authService.saveSession(data.session, data.user || authService.getCurrentUser());
+
+      if (data.session && data.user && data.user.id) {
+        authService.saveSession(data.session, data.user, data.user.id);
         return data;
       } else {
         throw new Error('Invalid refresh response from server');
@@ -223,11 +218,11 @@ export const authService = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Password reset request failed');
       }
-      
+
       return data;
     } catch (error) {
       console.error('Password reset request error:', error);
@@ -238,18 +233,19 @@ export const authService = {
   /**
    * Check if user is authenticated
    */
-  isAuthenticated: () => {
-    const token = authService.getToken();
+  isAuthenticated: (userId?: string) => {
+    const token = authService.getToken(userId || authService.getCurrentUserId());
     return !!token;
   },
 
   /**
    * Get the current user
    */
-  getCurrentUser: () => {
-    const userStr = localStorage.getItem(USER_KEY);
+  getCurrentUser: (userId?: string) => {
+    const id = userId || authService.getCurrentUserId();
+    const userStr = sessionStorage.getItem(`${USER_KEY_BASE}_${id}`);
     if (!userStr) return null;
-    
+
     try {
       return JSON.parse(userStr);
     } catch (error) {
@@ -261,9 +257,10 @@ export const authService = {
   /**
    * Get auth token
    */
-  getToken: () => {
+  getToken: (userId?: string) => {
+    const id = userId || authService.getCurrentUserId();
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(`${TOKEN_KEY_BASE}_${id}`);
     } catch (error) {
       console.error('Error getting token:', error);
       return null;
@@ -273,17 +270,26 @@ export const authService = {
   /**
    * Get auth headers for API requests
    */
-  getAuthHeaders: () => {
-    const token = authService.getToken();
+  getAuthHeaders: (userId?: string) => {
+    const token = authService.getToken(userId);
     return token ? {
-      [AUTH_HEADER]: `${TOKEN_PREFIX}${token}`
+      [AUTH_HEADER]: `${TOKEN_PREFIX}${token}`,
     } : {};
+  },
+
+  /**
+   * Get current userId from storage (first valid user if multiple exist)
+   */
+  getCurrentUserId: () => {
+    const keys = Object.keys(sessionStorage);
+    const userId = keys.find(key => key.startsWith(`${USER_KEY_BASE}_`))?.split('_')[1];
+    return userId || undefined;
   },
 
   /**
    * Social auth
    */
-  socialAuth: async (provider: string, accessToken: string) => {
+  socialAuth: async (provider: string, accessToken: string, userId: string) => {
     try {
       const response = await fetch(`${API_URL}/auth/${provider.toLowerCase()}`, {
         method: 'POST',
@@ -296,26 +302,21 @@ export const authService = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || `${provider} authentication failed`);
       }
-      
-      // Store token in localStorage
-      if (data.session) {
-        authService.saveSession(data.session, data.user);
+
+      if (data.session && data.user && data.user.id) {
+        authService.saveSession(data.session, data.user, data.user.id);
       } else {
         throw new Error(`Invalid ${provider} auth response`);
       }
-      
+
       return data;
     } catch (error) {
       console.error(`${provider} auth error:`, error);
       throw error;
     }
   },
-
-
-
-  
 };

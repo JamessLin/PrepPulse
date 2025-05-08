@@ -37,11 +37,13 @@ const authFetch = async (input: RequestInfo, init: RequestInit = {}): Promise<Re
 
   // first attempt
   let res = await fetch(input, { ...init, headers: { ...baseHeaders, ...init.headers } as HeadersInit });
-
+  const resolvedUserId = authService.getCurrentUserId();
   // if our access token is expired, try to refresh & retry
   if (res.status === 401) {
     try {
-      await authService.refreshToken();
+      if (resolvedUserId) {
+        await authService.refreshToken(resolvedUserId);
+      }
       const retryHeaders = {
         ...baseHeaders,
         ...authService.getAuthHeaders(), // now contains the fresh token

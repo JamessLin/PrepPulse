@@ -1,6 +1,12 @@
 "use client"
 
-export function Confetti() {
+interface ConfettiAnimationProps {
+  show: boolean
+}
+
+export function ConfettiAnimation({ show }: ConfettiAnimationProps) {
+  if (!show) return null
+
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
       <div className="absolute inset-0 flex items-center justify-center">

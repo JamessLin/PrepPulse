@@ -97,12 +97,6 @@ export interface ResumeUploadResponse {
 
 
 
-/**
- * Props for the HowItWorksModal component
- */
-export interface HowItWorksModalProps {
-    onClose: () => void
-}
 
 /**
  * Props for the DateSelector component
@@ -145,7 +139,7 @@ export interface TimeSlot {
 }
   
 export interface TimeSelectorProps {
-    selectedDate: Date
+    selectedDate: Date | null
     selectedTime: string   //TODO: Change to time type
     onTimeSelect: (time: string) => void
 }

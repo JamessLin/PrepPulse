@@ -1,10 +1,10 @@
 "use client"
 
-import { Users, Bot, UserPlus, Mail } from "lucide-react"
-import { User } from "lucide-react"
+import { Users, Bot, UserPlus, Mail, User } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
+// Define the InterviewMode interface
 export interface InterviewMode {
   id: string
   name: string
@@ -16,8 +16,40 @@ export interface InterviewMode {
   badge?: string
 }
 
+// Default interview modes
+export const DEFAULT_INTERVIEW_MODES: InterviewMode[] = [
+  {
+    id: "peer",
+    name: "Peer to Peer",
+    description: "Practice with another person seeking interview practice",
+    icon: <Users className="h-5 w-5" />,
+    color: "from-purple-600 to-indigo-600",
+    lightColor: "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+    darkColor: "bg-purple-600 text-white",
+  },
+  {
+    id: "ai",
+    name: "You vs AI",
+    description: "Practice with our advanced AI interviewer",
+    icon: <Bot className="h-5 w-5" />,
+    color: "from-blue-600 to-cyan-600",
+    lightColor: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    darkColor: "bg-blue-600 text-white",
+    badge: "Beta",
+  },
+  {
+    id: "friend",
+    name: "You vs Friend",
+    description: "Invite a specific person to interview you",
+    icon: <UserPlus className="h-5 w-5" />,
+    color: "from-emerald-600 to-teal-600",
+    lightColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    darkColor: "bg-emerald-600 text-white",
+  },
+]
+
 interface InterviewModeSelectorProps {
-  modes: InterviewMode[]
+  modes?: InterviewMode[]
   selectedMode: string
   onSelectMode: (modeId: string) => void
   friendEmail?: string
@@ -25,24 +57,23 @@ interface InterviewModeSelectorProps {
 }
 
 export function InterviewModeSelector({
-  modes,
+  modes = DEFAULT_INTERVIEW_MODES,
   selectedMode,
   onSelectMode,
   friendEmail = "",
-  onFriendEmailChange
+  onFriendEmailChange,
 }: InterviewModeSelectorProps) {
+  // Get the selected mode object
+  const selectedModeObj = modes.find((mode) => mode.id === selectedMode)
+
   return (
-    <>
+    <div className="mb-6">
       {/* Heading */}
-      <div className="mb-6">
-        <h2 className="flex items-center gap-2 font-serif text-lg font-normal text-gray-900 dark:text-white">
-          <User className="h-5 w-5 text-purple-600" />
-          Interview Mode
-        </h2>
-        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-          Choose who you want to practice with
-        </p>
-      </div>
+      <h2 className="flex items-center gap-2 font-serif text-lg font-normal text-gray-900 dark:text-white">
+        <User className="h-5 w-5 text-purple-600" />
+        Interview Mode
+      </h2>
+      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Choose who you want to practice with</p>
 
       {/* Segmented control for interview modes */}
       <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-700/50">
@@ -79,9 +110,7 @@ export function InterviewModeSelector({
 
       {/* Mode description */}
       <div className="mt-2 rounded-lg bg-gray-50 p-2 text-xs dark:bg-gray-700/30">
-        <p className="text-gray-700 dark:text-gray-300">
-          {modes.find((mode) => mode.id === selectedMode)?.description}
-        </p>
+        <p className="text-gray-700 dark:text-gray-300">{selectedModeObj?.description}</p>
       </div>
 
       {/* Friend Email Input (conditionally shown) */}
@@ -109,6 +138,6 @@ export function InterviewModeSelector({
           </p>
         </div>
       )}
-    </>
+    </div>
   )
-} 
+}

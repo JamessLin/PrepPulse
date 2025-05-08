@@ -275,14 +275,14 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const now = new Date();
-    const scheduledTime = new Date(schedule.scheduled_time);
+    // const now = new Date();
+    // const scheduledTime = new Date(schedule.scheduled_time);
     
-    if (now < scheduledTime) {
-      res.status(400).json({ error: 'Interview time has not yet started' });
-      return;
-    }
-
+    // if (now < scheduledTime) {
+    //   res.status(400).json({ error: 'Interview time has not yet started' });
+    //   return;
+    // }
+    const scheduledTime = new Date(schedule.scheduled_time);
     if (schedule.status !== 'pending') {
       const { data: existingMatch, error: existingMatchError } = await supabase
         .from('matches')

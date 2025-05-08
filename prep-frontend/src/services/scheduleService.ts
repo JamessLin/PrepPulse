@@ -22,25 +22,34 @@ interface ScheduleData {
 }
 
 export const scheduleService = {
-  createSchedule: async (scheduledTime: string, interviewType?: string, interviewMode?: string, friendEmail?: string): Promise<ScheduleResponse> => {
+  createSchedule: async (
+    scheduledTime: string,
+    interviewType?: string,
+    interviewMode?: string,
+    friendEmail?: string
+  ): Promise<ScheduleResponse> => {
     try {
-      // Add debug output
       console.log('Creating schedule for time:', scheduledTime);
       console.log('Interview type:', interviewType);
       console.log('Interview mode:', interviewMode);
       console.log('Friend email:', friendEmail);
-      
+
       // Run auth debug utility
       const isAuthenticated = debugAuth();
-      
-      const token = authService.getToken();
+
+      // Get the current userId
+      const userId = authService.getCurrentUserId();
+      if (!userId) {
+        throw new Error('No user authenticated');
+      }
+
+      let token = authService.getToken(userId);
       if (!token) {
-        // Try to refresh token if no token is available
         try {
           console.log('No token available. Attempting to refresh...');
-          await authService.refreshToken();
-          const newToken = authService.getToken();
-          if (!newToken) {
+          await authService.refreshToken(userId);
+          token = authService.getToken(userId);
+          if (!token) {
             throw new Error('User not authenticated even after token refresh');
           }
           console.log('Token refresh successful');
@@ -49,48 +58,39 @@ export const scheduleService = {
           throw new Error('Authentication required. Please log in again.');
         }
       }
-      
-      // Get token again (might be refreshed now)
-      const currentToken = authService.getToken();
-      
-      // Prepare the data to send
+
+      console.log('Sending schedule request with token:', token ? 'Token exists' : 'No token');
+
       const scheduleData: ScheduleData = {
-        scheduledTime
+        scheduledTime,
       };
-      
-      // Add interview type if provided
+
       if (interviewType) {
         scheduleData.interviewType = interviewType;
       }
 
-      // Add interview mode if provided
       if (interviewMode) {
         scheduleData.interviewMode = interviewMode;
       }
 
-      // Add friend email if provided
       if (friendEmail) {
         scheduleData.friendEmail = friendEmail;
       }
 
-      console.log('Sending schedule request with token:', currentToken ? 'Token exists' : 'No token');
-      
       const response = await fetch(`${API_URL}/schedules/create`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${currentToken}`,
+          ...authService.getAuthHeaders(userId),
           'Content-Type': 'application/json',
-        },
+        } as Record<string, string>,
         body: JSON.stringify(scheduleData),
       });
 
       console.log('Schedule API response status:', response.status);
-      
-      // Log full response for debugging
+
       const responseText = await response.text();
       console.log('Raw API response:', responseText);
-      
-      // Parse the response text back to JSON
+
       let data;
       try {
         data = JSON.parse(responseText);
@@ -98,19 +98,14 @@ export const scheduleService = {
         console.error('Failed to parse API response as JSON:', e);
         throw new Error('Invalid response from server');
       }
-      
+
       if (!response.ok) {
-        // Check for specific error conditions
         if (response.status === 401) {
           console.error('Authentication failed. Token may be invalid or expired.');
-          
-          // Clear invalid credentials and notify user
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
-          
+          authService.clearSession(userId);
           throw new Error('Your session has expired. Please log in again.');
         }
-        
+
         throw new Error(data.error || `Failed to create schedule (Status: ${response.status})`);
       }
 
@@ -123,10 +118,14 @@ export const scheduleService = {
 
   getSchedule: async (scheduleId: string) => {
     try {
-      // Debug auth before making request
       debugAuth();
-      
-      const token = authService.getToken();
+
+      const userId = authService.getCurrentUserId();
+      if (!userId) {
+        throw new Error('No user authenticated');
+      }
+
+      const token = authService.getToken(userId);
       if (!token) {
         throw new Error('User not authenticated');
       }
@@ -134,9 +133,9 @@ export const scheduleService = {
       const response = await fetch(`${API_URL}/schedules/${scheduleId}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...authService.getAuthHeaders(userId),
           'Content-Type': 'application/json',
-        },
+        } as Record<string, string>,
       });
 
       const data = await response.json();
@@ -153,10 +152,14 @@ export const scheduleService = {
 
   joinInterview: async (scheduleId: string): Promise<JoinInterviewResponse> => {
     try {
-      // Debug auth before making request
       debugAuth();
-      
-      const token = authService.getToken();
+
+      const userId = authService.getCurrentUserId();
+      if (!userId) {
+        throw new Error('No user authenticated');
+      }
+
+      const token = authService.getToken(userId);
       if (!token) {
         throw new Error('User not authenticated');
       }
@@ -166,9 +169,9 @@ export const scheduleService = {
       const response = await fetch(`${API_URL}/schedules/join`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...authService.getAuthHeaders(userId),
           'Content-Type': 'application/json',
-        },
+        } as Record<string, string>,
         body: JSON.stringify({ scheduleId }),
       });
 
@@ -200,13 +203,17 @@ export const scheduleService = {
       throw error;
     }
   },
-  
+
   getUserSchedules: async () => {
     try {
-      // Debug auth before making request
       debugAuth();
-      
-      const token = authService.getToken();
+
+      const userId = authService.getCurrentUserId();
+      if (!userId) {
+        throw new Error('No user authenticated');
+      }
+
+      const token = authService.getToken(userId);
       if (!token) {
         throw new Error('User not authenticated');
       }
@@ -214,9 +221,9 @@ export const scheduleService = {
       const response = await fetch(`${API_URL}/schedules/user`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...authService.getAuthHeaders(userId),
           'Content-Type': 'application/json',
-        },
+        } as Record<string, string>,
       });
 
       const data = await response.json();
