@@ -321,3 +321,85 @@
     animation: confetti-6 2s ease-out forwards;
   }
 }
+
+@keyframes scale-up {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-up {
+  animation: scale-up 0.3s ease-out forwards;
+}
+
+/* Navbar background handling */
+.transparent-navbar {
+  background: transparent;
+}
+
+/* Enhanced navbar animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.navbar-slide-down {
+  animation: slideDown 0.5s ease-out forwards;
+}
+
+.navbar-item-active {
+  position: relative;
+}
+
+.navbar-item-active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: theme("colors.purple.600");
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.navbar-scrolled .navbar-item-active::after {
+  width: 50%;
+}
+.navbar-container {
+  isolation: isolate;
+  contain: layout;
+  will-change: transform;
+}
+
+/* Prevent FOUC during page transitions */
+.page-transition-fix {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/* Ensure mobile menu is properly layered */
+.mobile-menu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

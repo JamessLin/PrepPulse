@@ -8,6 +8,11 @@ import { Toaster } from "sonner"
 import Link from "next/link"
 import { UserNav } from "@/components/user-nav"
 import { usePathname } from "next/navigation"
+// Update the imports to include useState for the mobile menu
+import { useState, useEffect } from "react"
+import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
+import { Menu } from "lucide-react"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,58 +30,149 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const [scrolled, setScrolled] = useState(false)
+  // In the RootLayout component, add a state for the mobile menu
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if page is scrolled more than 100px
+      setScrolled(window.scrollY > 100)
+    }
+
+    // Add scroll event listener
+    window.addEventListener("scroll", handleScroll)
+
+    // Remove event listener on cleanup
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} light`}>
       <body className="font-sans bg-white">
         <ThemeProvider>
+          {/* Replace the entire header section with this updated version */}
           {!pathname.startsWith("/auth") && (
-            <header className="absolute top-0 left-0 right-0 z-10">
-              <div className="mx-auto flex h-20 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+            <motion.header
+              key={`navbar-${pathname}`}
+              className="fixed left-0 right-0 z-50 navbar-container page-transition-fix"
+              initial={false}
+              animate={{
+                top: scrolled ? 16 : 0,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+              }}
+            >
+              <motion.div
+                className="mx-auto flex items-center justify-between"
+                initial={false}
+                animate={{
+                  maxWidth: scrolled ? "64rem" : "80rem", // 5xl vs 7xl
+                  height: scrolled ? "3.5rem" : "5rem", // h-14 vs h-20
+                  padding: scrolled ? "0 1.5rem" : "0 1rem",
+                  borderRadius: scrolled ? "9999px" : "0px",
+                  backgroundColor: scrolled ? "rgba(255, 255, 255, 1)" : "rgba(255, 255, 255, 0)",
+                  borderWidth: scrolled ? "1px" : "0px",
+                  borderColor: scrolled ? "rgba(229, 231, 235, 1)" : "transparent",
+                  boxShadow: scrolled ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  backgroundColor: { duration: 0.2 },
+                  borderColor: { duration: 0.2 },
+                }}
+              >
                 {/* Left side - Logo */}
-                <div className="flex w-1/3 justify-start">
-                  <Link href="/" className="text-xl font-serif text-gray-900">
+                <div className="flex justify-start">
+                  <Link href="/" className="font-serif text-xl text-gray-900 transition-colors duration-300">
                     peer<span className="text-purple-600">fo</span>
                   </Link>
                 </div>
 
-                {/* Middle - Navigation */}
-                <nav className="flex w-1/3 justify-center">
-                  <div className="hidden space-x-8 md:flex">
-                    <Link
-                      href="/"
-                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
-                    >
+                {/* Middle - Navigation (desktop only) */}
+                <nav className="flex-1 hidden justify-center md:flex">
+                  <div className="space-x-8">
+                    <NavLink href="/" scrolled={scrolled}>
                       Home
-                    </Link>
-                    <Link
-                      href="/schedule"
-                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
-                    >
+                    </NavLink>
+                    <NavLink href="/schedule" scrolled={scrolled}>
                       Schedule
-                    </Link>
-                    <Link
-                      href="#"
-                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
-                    >
+                    </NavLink>
+                    <NavLink href="#" scrolled={scrolled}>
                       Resources
-                    </Link>
-                    <Link
-                      href="#"
-                      className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600"
-                    >
+                    </NavLink>
+                    <NavLink href="#" scrolled={scrolled}>
                       FAQ
-                    </Link>
+                    </NavLink>
                   </div>
                 </nav>
 
-                {/* Right side - User navigation */}
-                <div className="flex w-1/3 justify-end">
-                  <UserNav />
+                {/* Right side - User navigation (desktop) / Mobile menu button (mobile) */}
+                <div className="flex justify-end items-center">
+                  <div className="hidden md:block">
+                    <UserNav />
+                  </div>
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="md:hidden p-2 text-gray-700 hover:text-purple-600 transition-colors"
+                    aria-label="Toggle mobile menu"
+                  >
+                    <Menu size={24} />
+                  </button>
                 </div>
-              </div>
-            </header>
+              </motion.div>
+
+              {/* Mobile menu dropdown */}
+              <AnimatePresence>
+                {mobileMenuOpen && (
+                  <motion.div
+                    className="absolute top-full left-4 right-4 mt-2 bg-white rounded-lg shadow-lg overflow-hidden md:hidden mobile-menu"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="py-2 px-4 space-y-1">
+                      <MobileNavLink href="/" onClick={() => setMobileMenuOpen(false)}>
+                        Home
+                      </MobileNavLink>
+                      <MobileNavLink href="/schedule" onClick={() => setMobileMenuOpen(false)}>
+                        Schedule
+                      </MobileNavLink>
+                      <MobileNavLink href="#" onClick={() => setMobileMenuOpen(false)}>
+                        Resources
+                      </MobileNavLink>
+                      <MobileNavLink href="#" onClick={() => setMobileMenuOpen(false)}>
+                        FAQ
+                      </MobileNavLink>
+                    </div>
+                    <div className="border-t border-gray-100 py-3 px-4 flex flex-col space-y-2">
+                      <Link
+                        href="/auth"
+                        className="block w-full py-2 text-center text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        href="/auth"
+                        className="block w-full py-2 text-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-sm font-medium text-white shadow-sm hover:shadow-md transition-all"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Sign up
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.header>
           )}
-          <main>{children}</main>
+          <main className={!pathname.startsWith("/auth") ? "" : ""}>{children}</main>
           {!pathname.startsWith("/auth") && (
             <footer className="border-t bg-white py-12">
               <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -133,5 +229,57 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
+  )
+}
+
+// Replace the NavLink component at the bottom of the file with this:
+function NavLink({ href, scrolled, children }: { href: string; scrolled: boolean; children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isActive = pathname === href
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "relative text-sm font-medium transition-colors duration-300 px-3 py-2 rounded-full",
+        isActive ? "text-purple-600" : "text-gray-700 hover:text-purple-600",
+      )}
+    >
+      {isActive && (
+        <motion.span
+          layoutId="navbar-active-pill"
+          className="absolute inset-0 bg-purple-50 rounded-full -z-10"
+          animate={{
+            opacity: scrolled ? 1 : 0.7,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+            opacity: { duration: 0.2 },
+          }}
+        />
+      )}
+      {children}
+    </Link>
+  )
+}
+
+// Add the MobileNavLink component at the bottom of the file after the NavLink component
+function MobileNavLink({ href, onClick, children }: { href: string; onClick?: () => void; children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isActive = pathname === href
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "block py-2 px-3 text-sm font-medium rounded-md transition-colors",
+        isActive ? "text-purple-600 bg-purple-50" : "text-gray-700 hover:text-purple-600 hover:bg-gray-50",
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </Link>
   )
 }

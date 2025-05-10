@@ -91,6 +91,7 @@ export default function AuthPage() {
     }
   }
 
+
   const skipResumeUpload = () => {
     toast.info("You can add your resume later in settings")
     router.push("/")
@@ -116,7 +117,7 @@ export default function AuthPage() {
           isLoading={uploadingResume}
         />
       )}
-      <AuthHero />
+      {/* <AuthHero /> */}
     </AuthContainer>
   )
 }

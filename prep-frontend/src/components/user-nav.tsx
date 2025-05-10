@@ -30,7 +30,7 @@ export function UserNav() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<MinimalUser | null>(null);
-
+  const [scrolled, setScrolled] = useState(false)
   /* ──────────────────────────────────────────────────────────
      Pull first / last name from our `/users/profile` endpoint
   ────────────────────────────────────────────────────────── */
@@ -58,10 +58,20 @@ export function UserNav() {
       });
   }, []);
 
+    useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 100)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
   /* ────────────────────────────────────────────────────────── */
 
   const handleLogout = async () => {
-    await authService.logout();
+    const currentUser = authService.getCurrentUser();
+    await authService.logout(currentUser?.id);
     setIsAuthenticated(false);
     setUser(null);
     router.push("/"); // or /auth
