@@ -155,11 +155,20 @@ export default function SchedulePage() {
       // Create the ISO string
       const scheduledTime = scheduledDateTime.toISOString()
       
+      // Map interview mode to backend format
+      const interviewModeMap = {
+        "peer": "peer-to-peer",
+        "ai": "you-vs-ai",
+        "friend": "you-vs-friend"
+      }
+      
+      const backendMode = interviewModeMap[selectedMode as keyof typeof interviewModeMap] || "peer-to-peer"
+      
       // Call the scheduleService to create a schedule
       const response = await scheduleService.createSchedule(
         scheduledTime, 
         selectedType, 
-        selectedMode, 
+        backendMode, 
         friendEmail
       )
       
@@ -173,9 +182,9 @@ export default function SchedulePage() {
         scheduleId: response.scheduleId,
         scheduledTime,
         interviewType: selectedType,
-        // interviewMode: selectedMode,
-        // friendEmail: friendEmail || undefined,
-        // matched: false
+        interviewMode: backendMode,
+        friendEmail: friendEmail || undefined,
+        status: 'pending'
       })
       localStorage.setItem('userSchedules', JSON.stringify(schedules))
       

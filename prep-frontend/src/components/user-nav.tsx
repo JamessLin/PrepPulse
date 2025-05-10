@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Settings, User as UserIcon } from "lucide-react";
 
 import { authService } from "@/services/authService";
-import { userService } from "@/services/useService";  
+import { userService } from "@/services/userService";  
 
 interface MinimalUser {
   first_name?: string;

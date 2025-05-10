@@ -271,10 +271,15 @@ export const authService = {
    * Get auth headers for API requests
    */
   getAuthHeaders: (userId?: string) => {
-    const token = authService.getToken(userId);
-    return token ? {
-      [AUTH_HEADER]: `${TOKEN_PREFIX}${token}`,
-    } : {};
+    const token = authService.getToken(userId || authService.getCurrentUserId());
+    if (!token) {
+      console.warn('Auth: No token available for headers');
+      return {};
+    }
+    
+    return {
+      [AUTH_HEADER]: `${TOKEN_PREFIX}${token}`
+    };
   },
 
   /**

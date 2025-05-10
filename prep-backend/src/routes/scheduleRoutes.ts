@@ -3,7 +3,8 @@ import {
   createSchedule, 
   joinInterview, 
   getScheduleDetails, 
-  getUserSchedules 
+  getUserSchedules,
+  checkScheduleJoinable
 } from '../controllers/scheduleController';
 
 import { authenticateToken } from '../middleware/auth';
@@ -17,6 +18,9 @@ router.post('/join', authenticateToken, joinInterview);
 
 // Get all schedules for the current user
 router.get('/user', authenticateToken, getUserSchedules);
+
+// Check if a schedule is joinable
+router.get('/:id/joinable', authenticateToken, checkScheduleJoinable);
 
 // Get details of a specific schedule
 router.get('/:id', authenticateToken, getScheduleDetails);

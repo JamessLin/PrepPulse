@@ -6,6 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 interface ScheduleResponse {
   scheduleId: string;
   scheduledTime: string;
+  status?: string;
 }
 
 interface JoinInterviewResponse {
@@ -19,6 +20,18 @@ interface ScheduleData {
   interviewType?: string;
   interviewMode?: string;
   friendEmail?: string;
+}
+
+interface JoinableResponse {
+  scheduleId: string;
+  scheduledTime: string;
+  status: string;
+  interviewType: string;
+  interviewMode: string;
+  joinable: boolean;
+  reason: string;
+  timeRemaining: number;
+  canJoinAt: string | null;
 }
 
 export const scheduleService = {
@@ -61,21 +74,12 @@ export const scheduleService = {
 
       console.log('Sending schedule request with token:', token ? 'Token exists' : 'No token');
 
-      const scheduleData: ScheduleData = {
+      const scheduleData = {
         scheduledTime,
+        interviewType: interviewType || 'technical',
+        interviewMode: interviewMode || 'peer-to-peer',
+        friendEmail: friendEmail || null
       };
-
-      if (interviewType) {
-        scheduleData.interviewType = interviewType;
-      }
-
-      if (interviewMode) {
-        scheduleData.interviewMode = interviewMode;
-      }
-
-      if (friendEmail) {
-        scheduleData.friendEmail = friendEmail;
-      }
 
       const response = await fetch(`${API_URL}/schedules/create`, {
         method: 'POST',
@@ -150,7 +154,41 @@ export const scheduleService = {
     }
   },
 
-  joinInterview: async (scheduleId: string): Promise<JoinInterviewResponse> => {
+  checkScheduleJoinable: async (scheduleId: string): Promise<JoinableResponse> => {
+    try {
+      debugAuth();
+
+      const userId = authService.getCurrentUserId();
+      if (!userId) {
+        throw new Error('No user authenticated');
+      }
+
+      const token = authService.getToken(userId);
+      if (!token) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await fetch(`${API_URL}/schedules/${scheduleId}/joinable`, {
+        method: 'GET',
+        headers: {
+          ...authService.getAuthHeaders(userId),
+          'Content-Type': 'application/json',
+        } as Record<string, string>,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to check schedule joinability');
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error('Check schedule joinable error:', error);
+      throw error;
+    }
+  },
+
+  joinInterview: async (scheduleId: string): Promise<{message: string, searchTimeoutSeconds: number}> => {
     try {
       debugAuth();
 
@@ -187,17 +225,31 @@ export const scheduleService = {
         throw new Error('Invalid response from server');
       }
 
-      if (response.status === 202) {
-        throw new Error('Waiting for a match');
-      }
-      if (response.status === 408) {
-        throw new Error('No match found within 2 minutes. Please reschedule.');
-      }
       if (!response.ok) {
+        // If we get information about timeRemaining, include it in the error
+        if (data.timeRemaining) {
+          throw new Error(`${data.error} (${data.timeRemaining} minutes remaining)`);
+        }
         throw new Error(data.error || 'Failed to join interview');
       }
 
-      return data as JoinInterviewResponse;
+      // Update the schedule in localStorage
+      const storedSchedules = localStorage.getItem('userSchedules');
+      if (storedSchedules) {
+        const schedules = JSON.parse(storedSchedules);
+        const updatedSchedules = schedules.map((schedule: any) => {
+          if (schedule.scheduleId === scheduleId) {
+            return { ...schedule, status: 'searching' };
+          }
+          return schedule;
+        });
+        localStorage.setItem('userSchedules', JSON.stringify(updatedSchedules));
+      }
+
+      return {
+        message: data.message || 'Joined matchmaking queue',
+        searchTimeoutSeconds: data.searchTimeoutSeconds || 120
+      };
     } catch (error: any) {
       console.error('Join interview error:', error);
       throw error;
@@ -236,5 +288,5 @@ export const scheduleService = {
       console.error('Get user schedules error:', error);
       throw error;
     }
-  },
+  }
 };

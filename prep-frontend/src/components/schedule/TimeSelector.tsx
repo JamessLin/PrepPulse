@@ -13,7 +13,7 @@ const TIME_SLOTS = ["7:00 AM", "11:00 AM", "3:00 PM", "9:00 PM"]
 
 /**
  * getAvailableSlots – Computes the enabled / disabled state for every slot on a
- * given date. A slot is disabled when it starts < 60 min from NOW (user's
+ * given date. A slot is disabled when it starts < 60 min from NOW (user's
  * local time), or when the day is in the past.
  */
 function getAvailableSlots(date: Date): TimeSlot[] {
@@ -27,14 +27,14 @@ function getAvailableSlots(date: Date): TimeSlot[] {
 
     const slotDate = new Date(date)
     slotDate.setHours(
-      // convert 12‑hour → 24‑hour keeping 12 AM / 12 PM edge‑cases in mind
+      // convert 12‑hour → 24‑hour keeping 12 AM / 12 PM edge‑cases in mind
       isPM && hour !== 12 ? hour + 12 : !isPM && hour === 12 ? 0 : hour,
     )
     slotDate.setMinutes(minute)
     slotDate.setSeconds(0)
     slotDate.setMilliseconds(0)
 
-    // Disable when slot starts less than 1 h from now
+    // Disable when slot starts less than 1 h from now
     const isDisabled = slotDate.getTime() - now.getTime() < 60 * 60 * 1000
 
     return { time: slot, disabled: isDisabled }
@@ -108,8 +108,6 @@ export function TimeSlotSelector({ selectedDate, selectedTime, onTimeSelect }: T
           </p>
         )}
       </div>
-
-
     </div>
   )
 }
