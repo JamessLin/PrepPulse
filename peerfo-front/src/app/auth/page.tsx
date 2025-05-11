@@ -17,7 +17,7 @@ import { useAuth } from "@/context/authContext"
 export default function AuthPage() {
   const router = useRouter()
   const { login, register, isLoading: authLoading } = useAuth()
-  
+  console.log("gey", process.env.NEXT_PUBLIC_API_URL)
   const [isSignIn, setIsSignIn] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [registrationComplete, setRegistrationComplete] = useState(false)
