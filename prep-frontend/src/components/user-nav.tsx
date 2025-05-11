@@ -18,6 +18,7 @@ import { LogOut, Settings, User as UserIcon } from "lucide-react";
 
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";  
+import { useAuth } from "@/context/authContext";
 
 interface MinimalUser {
   first_name?: string;
@@ -27,26 +28,22 @@ interface MinimalUser {
 
 export function UserNav() {
   const router = useRouter();
+  const { user: authUser, logout } = useAuth();
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<MinimalUser | null>(null);
-  const [scrolled, setScrolled] = useState(false)
+  const [scrolled, setScrolled] = useState(false);
+
   /* ──────────────────────────────────────────────────────────
      Pull first / last name from our `/users/profile` endpoint
   ────────────────────────────────────────────────────────── */
   useEffect(() => {
-    const loggedIn = authService.isAuthenticated();
-    setIsAuthenticated(loggedIn);
-
-    if (!loggedIn) return;
-
-    const currentAuth = authService.getCurrentUser(); // { email, id, … }
+    if (!authUser) return;
 
     userService
       .getProfile()
       .then((profile) => {
         setUser({
-          email: currentAuth?.email ?? undefined,
+          email: authUser.email,
           first_name: profile.first_name,
           last_name: profile.last_name,
         });
@@ -54,11 +51,11 @@ export function UserNav() {
       .catch((err) => {
         console.error("Failed to load profile:", err);
         // fall back to whatever info we already have
-        setUser({ email: currentAuth?.email });
+        setUser({ email: authUser.email });
       });
-  }, []);
+  }, [authUser]);
 
-    useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 100)
     }
@@ -70,21 +67,17 @@ export function UserNav() {
   /* ────────────────────────────────────────────────────────── */
 
   const handleLogout = async () => {
-    const currentUser = authService.getCurrentUser();
-    await authService.logout(currentUser?.id);
-    setIsAuthenticated(false);
-    setUser(null);
-    router.push("/"); // or /auth
+    await logout();
   };
 
   // Not logged in → show CTA
-  if (!isAuthenticated) {
+  if (!authUser) {
     return (
       <Link
         href="/auth"
         className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:shadow-lg"
       >
-        Sign Up
+        Sign Up
       </Link>
     );
   }
@@ -115,7 +108,7 @@ export function UserNav() {
         className="w-56 overflow-hidden rounded-xl p-0"
         align="end"
       >
-        {/* Top card with the user’s name / e‑mail */}
+        {/* Top card with the user's name / e‑mail */}
         <div className="border-b border-gray-100 bg-white px-4 py-3">
           <p className="font-medium text-gray-900">
             {user?.first_name} {user?.last_name}
@@ -150,7 +143,7 @@ export function UserNav() {
           className="flex cursor-pointer items-center gap-2 py-2.5 pl-4 text-red-600 focus:bg-red-50 focus:text-red-600"
         >
           <LogOut className="h-4 w-4" />
-          <span>Sign out</span>
+          <span>Sign out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -24,7 +24,7 @@ import { ConfettiAnimation } from "@/components/ui/Confetti"
 import { InterviewSchedule } from "@/components/schedule/interview-schedule"
 import { ConfirmationModal } from "@/components/schedule/ConfirmationModal"
 import { scheduleService } from "@/services/scheduleService"
-import { authService } from "@/services/authService"
+import { AuthProvider, useAuth } from "@/context/authContext"
 
 // Fixed time slots for every day (or you could get them from your service)
 const TIME_SLOTS = ["7:00 AM", "11:00 AM", "3:00 PM", "9:00 PM"]
@@ -35,10 +35,9 @@ const TODAY = new Date()
 TODAY.setHours(0, 0, 0, 0) // Set to beginning of today
 const MAX_BOOKING_DATE = addDays(TODAY, MAX_BOOKING_DAYS)
 
-
-
-export default function SchedulePage() {
+function SchedulePageContent() {
   const router = useRouter()
+  const { user, isAuthenticated } = useAuth()
 
   const [currentDate, setCurrentDate] = useState(TODAY)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -66,12 +65,10 @@ export default function SchedulePage() {
 
   // Check if user is authenticated
   useEffect(() => {
-    const token = authService.getToken();
-    if (!token) {
-      router.push('/auth?redirect=/schedule');
+    if (!isAuthenticated) {
+      router.push('/auth');
     }
-  }, [router]);
-
+  }, [isAuthenticated, router]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
@@ -174,19 +171,6 @@ export default function SchedulePage() {
       
       // Save the scheduleId for later
       setScheduleId(response.scheduleId)
-      
-      // Save to localStorage for demo purposes
-      const storedSchedules = localStorage.getItem('userSchedules') 
-      const schedules = storedSchedules ? JSON.parse(storedSchedules) : []
-      schedules.push({
-        scheduleId: response.scheduleId,
-        scheduledTime,
-        interviewType: selectedType,
-        interviewMode: backendMode,
-        friendEmail: friendEmail || undefined,
-        status: 'pending'
-      })
-      localStorage.setItem('userSchedules', JSON.stringify(schedules))
       
       // Show success message
       const selectedTypeName = INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name
@@ -341,5 +325,14 @@ export default function SchedulePage() {
         onViewSchedule={handleViewSchedule}
       />
     </div>
+  )
+}
+
+// Wrap the page content with the AuthProvider
+export default function SchedulePage() {
+  return (
+    <AuthProvider requireAuth={true}>
+      <SchedulePageContent />
+    </AuthProvider>
   )
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { createSupabaseClient } from '../config/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs'
 import * as path from 'path';
@@ -39,6 +39,10 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
           res.status(401).json({ error: 'User not authenticated' });
           return;
       }
+      
+      const authHeader = req.headers.authorization;
+      const supabase = createSupabaseClient(authHeader);
+      
       const fileBuffer = req.file.buffer;
       const fileTypeResult = await FileType.fromBuffer(fileBuffer);
       const fileExtension = fileTypeResult?.ext || 
@@ -123,8 +127,11 @@ export const getResume = async (req: Request, res: Response): Promise<void> => {
           res.status(401).json({ error: 'User not authenticated' });
           return;
       }
+      
+      const authHeader = req.headers.authorization;
+      const supabase = createSupabaseClient(authHeader);
+      
       const targetUserId = req.params.userId || user.id;
-
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -171,6 +178,9 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
+    
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     const {data: profileData, error: profileError} = await supabase
       .from('profiles')
@@ -236,6 +246,9 @@ export const getPeerResumes = async (req: Request, res: Response): Promise<void>
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
+    
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     // Get all public resumes
     const { data: resumes, error: resumesError } = await supabase
@@ -250,15 +263,15 @@ export const getPeerResumes = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    res.status(200).json({ 
-      resumes: resumes || [] 
-    });
+    // Filter out the user's own resume
+    const peerResumes = resumes.filter(resume => resume.id !== user.id);
+
+    res.status(200).json({ resumes: peerResumes });
   } catch (error) {
     console.error('Get peer resumes error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-};
-
+}
 
 export const togglePublicStatus = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -267,47 +280,48 @@ export const togglePublicStatus = async (req: Request, res: Response): Promise<v
       res.status(401).json({ error: 'User not authenticated' });
       return;
     }
+    
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
-    // Get the current resume status
-    const { data: profileData, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('resume_is_public, resume_url')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profileData) {
+    if (profileError || !profile) {
       res.status(404).json({ error: 'Profile not found' });
       return;
     }
 
-    if (!profileData.resume_url) {
-      res.status(400).json({ error: 'No resume found to update' });
+    if (!profile.resume_url) {
+      res.status(400).json({ error: 'No resume to toggle visibility' });
       return;
     }
 
-    const newPublicStatus = !profileData.resume_is_public;
+    const newStatus = !profile.resume_is_public;
 
-    // Update resume status
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        resume_is_public: newPublicStatus,
+        resume_is_public: newStatus,
         updated_at: new Date()
       })
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Profile update error:', updateError);
+      console.error('Error updating resume visibility:', updateError);
       res.status(500).json({ error: 'Failed to update resume visibility' });
       return;
     }
 
-    res.status(200).json({ 
-      message: `Resume is now ${newPublicStatus ? 'public' : 'private'}`,
-      isPublic: newPublicStatus
+    res.status(200).json({
+      message: `Resume is now ${newStatus ? 'public' : 'private'}`,
+      is_public: newStatus
     });
   } catch (error) {
-    console.error('Toggle public status error:', error);
+    console.error('Toggle resume visibility error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

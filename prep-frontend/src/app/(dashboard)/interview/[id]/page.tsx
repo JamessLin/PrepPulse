@@ -9,6 +9,18 @@ import { authService } from '@/services/authService';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
+interface ScheduleDetails {
+  scheduleId: string;
+  scheduledTime: string;
+  status: string;
+  interviewType?: string;
+  interviewMode?: string;
+  matchedWith?: {
+    userId: string;
+    name: string;
+  };
+}
+
 export default function InterviewPage() {
   const [status, setStatus] = useState<'loading' | 'waiting' | 'matched' | 'no-match' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +59,7 @@ export default function InterviewPage() {
     const setupSocket = async () => {
       try {
         // First check if the schedule is in 'searching' state
-        const scheduleDetails = await scheduleService.getSchedule(scheduleId);
+        const scheduleDetails = await scheduleService.getSchedule(scheduleId) as ScheduleDetails;
         
         if (scheduleDetails.status === 'matched') {
           // Already matched, generate LiveKit token and redirect to room

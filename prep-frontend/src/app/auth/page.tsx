@@ -12,9 +12,12 @@ import { AuthContainer } from "@/components/auth/AuthContainer"//The box
 import { AuthFormData } from "@/lib/types"
 import { authService } from "@/services/authService"
 import { resumeService } from "@/services/resumeService"
+import { useAuth } from "@/context/authContext"
 
 export default function AuthPage() {
   const router = useRouter()
+  const { login, register, isLoading: authLoading } = useAuth()
+  
   const [isSignIn, setIsSignIn] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [registrationComplete, setRegistrationComplete] = useState(false)
@@ -28,23 +31,17 @@ export default function AuthPage() {
 
     try {
       if (isSignIn) {
-        const response = await authService.login(formData)
-        toast.success("Signed in successfully!")
-        router.push("/")
+        await login(formData)
+        // The useAuth hook will handle redirection and toast
       } else {
-        await authService.register(formData)
+        await register(formData)
+        
+        // After registration, automatically log in
+        const loginResult = await login(formData)
         setRegistrationComplete(true)
-
-        const loginResponse = await authService.login({
-          email: formData.email,
-          password: formData.password,
-          firstName: formData.firstName, 
-          lastName: formData.lastName,
-        })
-        setCurrentUser(loginResponse.user)
       }
     } catch (error: any) {
-      toast.error(error.message || (isSignIn ? "Login failed" : "Registration failed"))
+      // Error handling is done by useAuth hook
     } finally {
       setIsLoading(false)
     }
@@ -91,7 +88,6 @@ export default function AuthPage() {
     }
   }
 
-
   const skipResumeUpload = () => {
     toast.info("You can add your resume later in settings")
     router.push("/")
@@ -103,7 +99,7 @@ export default function AuthPage() {
         <AuthForm 
           isSignIn={isSignIn}
           setIsSignIn={setIsSignIn}
-          isLoading={isLoading}
+          isLoading={isLoading || authLoading}
           onSubmit={handleAuth}
           onGoogleSignIn={() => handleSocialAuth("Google")}
           onGithubSignIn={() => handleSocialAuth("GitHub")}

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { supabase, createSupabaseClient } from '../config/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { AccessToken } from 'livekit-server-sdk';
 import { Server, Socket } from 'socket.io';
@@ -200,6 +200,9 @@ export const initializeSocket = (socketIo: Server) => {
 export const createSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+
     if (!user || !user.id) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -289,6 +292,9 @@ export const createSchedule = async (req: AuthRequest, res: Response): Promise<v
 export const getScheduleDetails = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+
     if (!user || !user.id) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -367,6 +373,9 @@ export const getScheduleDetails = async (req: AuthRequest, res: Response): Promi
 export const getUserSchedules = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+
     if (!user || !user.id) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -462,6 +471,9 @@ export const getUserSchedules = async (req: AuthRequest, res: Response): Promise
 export const joinInterview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+
     if (!user || !user.id) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
@@ -555,6 +567,9 @@ export const joinInterview = async (req: AuthRequest, res: Response): Promise<vo
 export const checkScheduleJoinable = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+
     if (!user || !user.id) {
       res.status(401).json({ error: 'User not authenticated' });
       return;
