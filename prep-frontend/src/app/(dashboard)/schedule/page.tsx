@@ -63,13 +63,6 @@ function SchedulePageContent() {
   const nextWeekStart = addWeeks(startDate, 1)
   const canGoNext = isBefore(nextWeekStart, addDays(MAX_BOOKING_DATE, 1))
 
-  // Check if user is authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth');
-    }
-  }, [isAuthenticated, router]);
-
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
     setSelectedTime(null)
@@ -108,6 +101,12 @@ function SchedulePageContent() {
 
   const handleSchedule = async () => {
     if (!selectedDate || !selectedTime) return
+
+    if (!isAuthenticated) {
+      toast.error("Please sign in to schedule an interview")
+      router.push('/auth')
+      return
+    }
 
     // For friend mode, validate email
     if (selectedMode === "friend" && !friendEmail) {
@@ -331,7 +330,7 @@ function SchedulePageContent() {
 // Wrap the page content with the AuthProvider
 export default function SchedulePage() {
   return (
-    <AuthProvider requireAuth={true}>
+    <AuthProvider requireAuth={false} redirectToLogin={false}>
       <SchedulePageContent />
     </AuthProvider>
   )

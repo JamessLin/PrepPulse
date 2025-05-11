@@ -201,8 +201,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     try {
       const result = await authService.login(credentials);
       checkAuthStatus();
-      toast.success('Signed in successfully!');
-      router.push('/');
       return result;
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
@@ -216,7 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     setIsLoading(true);
     try {
       const result = await authService.register(userData);
-      toast.success('Registration successful! Please sign in.');
+      toast.success('Registration successful!');
       return result;
     } catch (error: any) {
       toast.error(error.message || 'Registration failed');

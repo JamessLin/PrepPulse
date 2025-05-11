@@ -32,6 +32,7 @@ export default function AuthPage() {
     try {
       if (isSignIn) {
         await login(formData)
+        router.push("/")
         // The useAuth hook will handle redirection and toast
       } else {
         await register(formData)
