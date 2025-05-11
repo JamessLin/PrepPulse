@@ -9,6 +9,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
+import livekitRoutes from './routes/livekitRoutes';
 import { initializeSocket } from './controllers/scheduleController'; // Import the initialization function
 
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/livekit', livekitRoutes);
 
 app.get('/', (req, res) => {
   res.send('Express + TypeScript + Supabase Backend');

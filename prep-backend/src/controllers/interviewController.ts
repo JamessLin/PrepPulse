@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { createSupabaseClient } from '../config/supabase';
 
 interface AuthRequest extends Request {
   user?: { id: string };
@@ -25,6 +25,8 @@ export const generateInterviewQuestions = async (req: AuthRequest, res: Response
   try {
     const userId = req.user?.id;
     const { resumeId } = req.params;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });

@@ -1,11 +1,14 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { createSupabaseClient } from '../config/supabase';
 
-//FIXME: Prevent user from signing in twice with the same email address.
+
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, first_name: firstName, last_name: lastName } = req.body;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+    
     // Validate input
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required' });
@@ -42,6 +45,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     // Validate input
     if (!email || !password) {
@@ -73,6 +78,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
   try {
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+    
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -90,6 +98,8 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 export const refreshToken = async (req: Request, res: Response): Promise<void> => {
   try {
     const { refreshToken } = req.body;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     if (!refreshToken) {
       res.status(400).json({ error: 'Refresh token is required' });
@@ -118,6 +128,8 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
 export const requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     if (!email) {
       res.status(400).json({ error: 'Email is required' });
@@ -145,6 +157,8 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { password } = req.body;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     if (!password) {
       res.status(400).json({ error: 'New password is required' });

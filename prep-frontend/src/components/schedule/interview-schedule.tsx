@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { CalendarIcon, ClockIcon, UserIcon, RefreshCw } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
+import { authService } from "@/services/authService"
 import { toast } from "sonner"
 import { JoinInterviewButton } from "./JoinInterviewButton"
 import { useRouter } from "next/navigation"
@@ -28,38 +29,108 @@ export function InterviewSchedule() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchSchedules = async () => {
+  const fetchSchedules = async (forceRefresh = true) => {
     try {
+      // Don't run if we're already loading or refreshing
+      if (isLoading && !isRefreshing) return;
+      
       setIsLoading(true)
       setError(null)
-      const data = await scheduleService.getUserSchedules()
       
-      // Sort schedules by date (most recent first)
-      const sortedSchedules = [...data].sort((a, b) => 
-        new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime()
+      const response = await scheduleService.getUserSchedules(forceRefresh)
+      console.log('InterviewSchedule: API response received:', response);
+      
+      let rawSchedules: Schedule[] = [];
+      if (response && Array.isArray(response.schedules)) {
+        rawSchedules = response.schedules;
+      } else if (Array.isArray(response)) {
+        rawSchedules = response;
+      } else {
+        console.warn('InterviewSchedule: Response was not in expected format:', response);
+      }
+      
+      const sortedSchedules = [...rawSchedules].sort((a, b) => 
+        new Date(b.scheduledTime).getTime() - new Date(a.scheduledTime).getTime()
       )
       
       setSchedules(sortedSchedules)
     } catch (error: any) {
-      console.error("Failed to fetch schedules:", error)
+      console.error("InterviewSchedule: Failed to fetch schedules:", error)
       setError(error.message || "Failed to load your interview schedule")
-      toast.error("Failed to load interview schedule", {
-        description: error.message || "Please try again later"
-      })
+      setSchedules([])
+      
+      if (error.message.includes('Authentication') || error.message.includes('401')) {
+        toast.error("Authentication error", {
+          description: "Please sign in again to view your schedules"
+        })
+      } else {
+        toast.error("Failed to load interview schedule", {
+          description: error.message || "Please try again later"
+        })
+      }
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
     }
   }
 
+  // When component mounts, fetch schedules once
   useEffect(() => {
-    fetchSchedules()
+    fetchSchedules(true) // Force refresh on initial load
+      .catch(err => {
+        console.error('Initial schedule fetch failed:', err);
+        console.debug('Error details:', { message: err.message, stack: err.stack });
+      });
+    
+    // Clean up any existing interval on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
   }, [])
+  
+  // Set up auto-refresh on a separate useEffect with safeguards
+  useEffect(() => {
+    // Only set up auto-refresh if we're not in an error state
+    if (!error && authService.isLoggedIn()) {
+      // Clear any existing interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+      
+      // Create a new interval
+      intervalRef.current = setInterval(() => {
+        if (!isLoading && !isRefreshing && authService.isLoggedIn()) {
+          console.log('Auto-refreshing schedules...')
+          fetchSchedules(true) // Force refresh on auto-refresh
+            .catch(err => {
+              console.error('Auto-refresh failed:', err);
+              console.debug('Error details:', { 
+                message: err.message, 
+                data: typeof err === 'object' ? err : 'Non-object error',
+                time: new Date().toISOString()
+              });
+            });
+        }
+      }, 60000) // Refresh every minute instead of 30 seconds
+    }
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [error, isLoading])
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
+    console.log('Manual refresh requested');
     setIsRefreshing(true)
-    await fetchSchedules()
+    fetchSchedules(true) // Force refresh on manual refresh
   }
 
   // Get human-readable mode name
@@ -132,7 +203,7 @@ export function InterviewSchedule() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading && schedules.length === 0) {
     return (
       <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all dark:bg-gray-800">
         <div className="flex justify-between items-center mb-4">
@@ -167,10 +238,10 @@ export function InterviewSchedule() {
           variant="ghost" 
           size="icon" 
           onClick={handleRefresh} 
-          disabled={isRefreshing}
+          disabled={isRefreshing || isLoading}
           className="rounded-full"
         >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isRefreshing || isLoading ? 'animate-spin' : ''}`} />
           <span className="sr-only">Refresh</span>
         </Button>
       </div>

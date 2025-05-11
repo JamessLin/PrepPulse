@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { createSupabaseClient } from '../config/supabase';
 
 
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     console.log('[getProfile] Requesting profile for user ID:', userId);
 
@@ -43,6 +45,8 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
   try {
     const userId = req.user?.id;
     const { firstName, lastName, avatarUrl, ...otherFields } = req.body;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
 
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });

@@ -1,6 +1,7 @@
 import { authService } from './authService';
+import { authFetch, handleResponse, getApiUrl } from './apiUtils';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = getApiUrl();
 
 interface Resume {
   resume_url: string;
@@ -46,11 +47,6 @@ export const resumeService = {
    */
   uploadResume: async (file: File, isPublic: boolean): Promise<ResumeResponse> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
-
       if (!file || !['application/pdf'].includes(file.type)) {
         throw new Error('Invalid file type. Only PDF files are allowed.');
       }
@@ -63,20 +59,14 @@ export const resumeService = {
       formData.append('resume', file);
       formData.append('isPublic', isPublic.toString());
 
-      const response = await fetch(`${API_URL}/resume/upload`, {
+      // For FormData, don't set Content-Type header - browser will set it with boundary
+      const response = await authFetch(`${API_URL}/resume/upload`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: {}, // Let authFetch add auth headers, but let browser set Content-Type for FormData
         body: formData,
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload resume');
-      }
-
-      return data;
+      return await handleResponse<ResumeResponse>(response);
     } catch (error: any) {
       console.error('Upload resume error:', error);
       throw error;
@@ -90,27 +80,13 @@ export const resumeService = {
    */
   getResume: async (userId?: string): Promise<Resume> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
-
       const url = userId ? `${API_URL}/resume/${userId}` : `${API_URL}/resume`;
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch resume');
-      }
-
-      return data;
+      return await handleResponse<Resume>(response);
     } catch (error: any) {
       console.error('Get resume error:', error);
       throw error;
@@ -123,25 +99,11 @@ export const resumeService = {
    */
   deleteResume: async (): Promise<{ message: string }> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
-
-      const response = await fetch(`${API_URL}/resume`, {
+      const response = await authFetch(`${API_URL}/resume`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete resume');
-      }
-
-      return data;
+      return await handleResponse<{ message: string }>(response);
     } catch (error: any) {
       console.error('Delete resume error:', error);
       throw error;
@@ -156,25 +118,11 @@ export const resumeService = {
    */
   getPeerResumes: async (page: number = 1, limit: number = 10): Promise<PeerResumesResponse> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
-
-      const response = await fetch(`${API_URL}/resume/peer?page=${page}&limit=${limit}`, {
+      const response = await authFetch(`${API_URL}/resume/peer?page=${page}&limit=${limit}`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch peer resumes');
-      }
-
-      return data;
+      return await handleResponse<PeerResumesResponse>(response);
     } catch (error: any) {
       console.error('Get peer resumes error:', error);
       throw error;
@@ -188,26 +136,12 @@ export const resumeService = {
    */
   togglePublicStatus: async (isPublic: boolean): Promise<TogglePublicResponse> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
-
-      const response = await fetch(`${API_URL}/resume/toggle-public`, {
+      const response = await authFetch(`${API_URL}/resume/toggle-public`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ isPublic }),
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to toggle resume visibility');
-      }
-
-      return data;
+      return await handleResponse<TogglePublicResponse>(response);
     } catch (error: any) {
       console.error('Toggle public status error:', error);
       throw error;
