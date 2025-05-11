@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { AccessToken } from 'livekit-server-sdk';
 import { Server, Socket } from 'socket.io';
 
+//TODO: SEPERATE MATCHMAKING AND QUEUE SERVICE
+
 interface AuthRequest extends Request {
   user?: { id: string };
 }

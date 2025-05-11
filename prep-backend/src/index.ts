@@ -9,9 +9,10 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
-import livekitRoutes from './routes/livekitRoutes';
+import livekitRoutes from './routes/livekit';
 import { initializeSocket } from './controllers/scheduleController'; // Import the initialization function
 
+//TODO: Remove livekitRoutes
 dotenv.config();
 
 const app = express();
@@ -41,6 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/livekit', livekitRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('Express + TypeScript + Supabase Backend');
