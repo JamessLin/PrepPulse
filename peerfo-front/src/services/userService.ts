@@ -1,5 +1,6 @@
 import { authService } from "./authService";
-import { authFetch, handleResponse, getApiUrl } from './apiUtils';
+import { supabase } from '@/lib/supabase';
+import { getApiUrl } from './apiUtils';
 
 const API_URL = getApiUrl();
 
@@ -15,23 +16,31 @@ export interface UserProfile {
 
 export const userService = {
   /**
-   * GET /users/profile → returns the logged‑in user's profile row
+   * Fetch user profile directly from Supabase
    */
   async getProfile(): Promise<UserProfile> {
-    const userId = authService.getCurrentUserId();
-    if (!userId) {
+    // Get the current user ID from auth
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
       throw new Error('No user is authenticated');
     }
     
-    const res = await authFetch(`${API_URL}/users/profile`, { method: 'GET' });
-    const { profile } = await handleResponse<{ profile: UserProfile }>(res);
+    // Fetch the profile from Supabase's profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
     
-    return profile;
+    if (error) {
+      throw new Error(`Error fetching profile: ${error.message}`);
+    }
+    
+    return data as UserProfile;
   },
 
   /**
-   * PUT /users/profile → updates any fields you pass in the payload
-   * (firstName, lastName, avatarUrl, …others)
+   * Update user profile directly in Supabase
    */
   async updateProfile(
     payload: Partial<{
@@ -41,18 +50,42 @@ export const userService = {
       [key: string]: any;
     }>
   ): Promise<UserProfile> {
-    const userId = authService.getCurrentUserId();
-    if (!userId) {
+    // Get the current user ID from auth
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
       throw new Error('No user is authenticated');
     }
     
-    const res = await authFetch(`${API_URL}/users/profile`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
+    // Format payload for database
+    const profileData = {
+      ...(payload.firstName && { first_name: payload.firstName }),
+      ...(payload.lastName && { last_name: payload.lastName }),
+      ...(payload.avatarUrl && { avatar_url: payload.avatarUrl }),
+      updated_at: new Date().toISOString(),
+    };
     
-    const { profile } = await handleResponse<{ profile: UserProfile }>(res);
+    // Update auth metadata
+    if (payload.firstName || payload.lastName) {
+      await supabase.auth.updateUser({
+        data: {
+          first_name: payload.firstName,
+          last_name: payload.lastName,
+        }
+      });
+    }
     
-    return profile;
+    // Update the profile in Supabase
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(profileData)
+      .eq('id', user.id)
+      .select()
+      .single();
+    
+    if (error) {
+      throw new Error(`Error updating profile: ${error.message}`);
+    }
+    
+    return data as UserProfile;
   }
 };

@@ -37,7 +37,7 @@ const MAX_BOOKING_DATE = addDays(TODAY, MAX_BOOKING_DAYS)
 
 function SchedulePageContent() {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, session } = useAuth()
 
   const [currentDate, setCurrentDate] = useState(TODAY)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -102,7 +102,7 @@ function SchedulePageContent() {
   const handleSchedule = async () => {
     if (!selectedDate || !selectedTime) return
 
-    if (!isAuthenticated) {
+    if (!user || !session) {
       toast.error("Please sign in to schedule an interview")
       router.push('/auth')
       return

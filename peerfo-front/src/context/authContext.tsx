@@ -1,135 +1,36 @@
-// "use client"
-
-// import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-// import { useRouter } from 'next/navigation';
-// import { authService } from '@/services/authService';
-// import { AuthFormData } from '@/lib/types';
-// import { toast } from 'sonner';
-
-// interface AuthContextType {
-//   user: any | null;
-//   isLoading: boolean;
-//   login: (data: AuthFormData) => Promise<void>;
-//   register: (data: AuthFormData) => Promise<void>;
-//   logout: () => Promise<void>;
-// }
-
-// const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// export function AuthProvider({ children }: { children: ReactNode }) {
-//   const [user, setUser] = useState<any | null>(null);
-//   const [isLoading, setIsLoading] = useState(false);
-//   const [isInitialized, setIsInitialized] = useState(false);
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     // Check if user is already logged in on initial load
-//     const initAuth = async () => {
-//       const currentUser = authService.getCurrentUser();
-//       if (currentUser) {
-//         setUser(currentUser);
-//       }
-//       setIsInitialized(true);
-//     };
-
-//     initAuth();
-//   }, []);
-
-//   const login = async (data: AuthFormData) => {
-//     setIsLoading(true);
-//     try {
-//       const result = await authService.login(data);
-//       setUser(result.user);
-//       toast.success('Signed in successfully!');
-//       router.push('/');
-//     } catch (error: any) {
-//       toast.error(error.message || 'Failed to sign in');
-//       throw error;
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const register = async (data: AuthFormData) => {
-//     setIsLoading(true);
-//     try {
-//       await authService.register(data);
-//       toast.success('Registration successful! Please sign in.');
-//       return;
-//     } catch (error: any) {
-//       toast.error(error.message || 'Registration failed');
-//       throw error;
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const logout = async () => {
-//     setIsLoading(true);
-//     try {
-//       await authService.logout();
-//       setUser(null);
-//       toast.success('Logged out successfully');
-//       router.push('/auth');
-//     } catch (error: any) {
-//       toast.error(error.message || 'Failed to logout');
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const value = {
-//     user,
-//     isLoading,
-//     login,
-//     register,
-//     logout
-//   };
-
-//   // Show loading state until we've checked if the user is logged in
-//   if (!isInitialized) {
-//     return null;
-//   }
-
-//   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-// }
-
-// export const useAuth = () => {
-//   const context = useContext(AuthContext);
-//   if (context === undefined) {
-//     throw new Error('useAuth must be used within an AuthProvider');
-//   }
-//   return context;
-// };
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authService } from '@/services/authService';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { AuthFormData } from '@/lib/types';
 
 // Define the auth context type
 interface AuthContextType {
-  isAuthenticated: boolean;
+  user: User | null;
+  session: Session | null;
   isLoading: boolean;
-  userId: string | null;
-  user: any | null;
-  login: (credentials: any) => Promise<any>;
-  register: (userData: any) => Promise<any>;
+  login: (credentials: AuthFormData) => Promise<void>;
+  register: (userData: AuthFormData) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
-  refreshUserData: () => void;
+  resetPassword: (email: string) => Promise<void>;
 }
 
-// Create the auth context
+// Create the auth context with default values
 const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  isLoading: true,
-  userId: null,
   user: null,
-  login: async () => ({}),
-  register: async () => ({}),
+  session: null,
+  isLoading: true,
+  login: async () => {},
+  register: async () => {},
+  loginWithGoogle: async () => {},
+  loginWithGitHub: async () => {},
   logout: async () => {},
-  refreshUserData: () => {},
+  resetPassword: async () => {},
 });
 
 // Auth provider props
@@ -145,134 +46,192 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   requireAuth = false,
   redirectToLogin = true 
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [user, setUser] = useState<any | null>(null);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const router = useRouter();
 
-  // Check auth status on mount and when localStorage changes
-  const checkAuthStatus = () => {
-    const isLoggedIn = authService.isLoggedIn();
-    const currentUserId = authService.getCurrentUserId();
-    const currentUser = authService.getCurrentUser();
+  // Initialize auth state and subscribe to changes
+  useEffect(() => {
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      
+      // Get initial session
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user || null);
+      
+      // Handle redirect if needed
+      if (requireAuth && !session && redirectToLogin) {
+        router.push('/auth');
+      }
+      
+      setIsLoading(false);
+    };
     
-    console.log('Auth check - isLoggedIn:', isLoggedIn, 'userId:', currentUserId);
-    
-    setIsAuthenticated(isLoggedIn);
-    setUserId(currentUserId);
-    setUser(currentUser);
-    setIsLoading(false);
-    setIsInitialized(true);
-    
-    // Handle redirect if needed
-    if (requireAuth && !isLoggedIn && redirectToLogin) {
-      router.push('/auth');
-    }
-  };
+    // Initialize
+    initializeAuth();
 
-  // Handle logout
-  const handleLogout = async () => {
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user || null);
+        
+        // Handle redirect if auth state changes
+        if (requireAuth && !session && redirectToLogin) {
+          router.push('/auth');
+        }
+      }
+    );
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [requireAuth, redirectToLogin, router]);
+
+  // Login function
+  const login = async (credentials: AuthFormData) => {
     setIsLoading(true);
     try {
-      await authService.logout();
-      setIsAuthenticated(false);
-      setUserId(null);
-      setUser(null);
-      toast.success('Logged out successfully');
-      router.push('/auth');
+      const { error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+      
+      if (error) throw error;
+      toast.success('Logged in successfully');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to logout');
+      toast.error(error.message || 'Failed to sign in');
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Refresh user data
-  const refreshUserData = () => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-  };
-
-  // Handle login
-  const handleLogin = async (credentials: any) => {
+  // Register function
+  const register = async (userData: AuthFormData) => {
     setIsLoading(true);
     try {
-      const result = await authService.login(credentials);
-      checkAuthStatus();
-      return result;
+      const { error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+          }
+        }
+      });
+      
+      if (error) throw error;
+      toast.success('Registration successful');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
+      toast.error(error.message || 'Failed to register');
+      throw error;
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Login with Google
+  const loginWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sign in with Google');
       throw error;
     }
   };
 
-  // Handle registration
-  const handleRegister = async (userData: any) => {
-    setIsLoading(true);
+  // Login with GitHub
+  const loginWithGitHub = async () => {
     try {
-      const result = await authService.register(userData);
-      toast.success('Registration successful!');
-      return result;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
-      setIsLoading(false);
+      toast.error(error.message || 'Failed to sign in with GitHub');
       throw error;
     }
   };
 
-  // Set up listeners for auth changes
-  useEffect(() => {
-    // Initial check
-    checkAuthStatus();
-    
-    // Set up storage event listener to detect auth changes
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'sb-auth-token' || event.key === 'sb-user-data') {
-        checkAuthStatus();
-      }
-    };
-    
-    // Add listener
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Cleanup listener
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  // Logout function
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success('Logged out successfully');
+      router.push('/auth');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to logout');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Provide the auth context
+  // Reset password
+  const resetPassword = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      
+      if (error) throw error;
+      toast.success('Password reset email sent');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        isLoading,
-        userId,
-        user,
-        login: handleLogin,
-        register: handleRegister,
-        logout: handleLogout,
-        refreshUserData,
+      value={{ 
+        user, 
+        session, 
+        isLoading, 
+        login, 
+        register, 
+        loginWithGoogle, 
+        loginWithGitHub, 
+        logout, 
+        resetPassword 
       }}
     >
-      {(!requireAuth || isAuthenticated || isLoading) && isInitialized ? children : null}
+      {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use the auth context
+// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };
 
-// HOC to protect routes that require authentication
+// Higher-order component for protected routes
 export const withAuth = <P extends object>(
   Component: React.ComponentType<P>
 ): React.FC<P> => {
@@ -283,6 +242,10 @@ export const withAuth = <P extends object>(
       </AuthProvider>
     );
   };
-  
+
+  // Copy displayName
+  const displayName = Component.displayName || Component.name || 'Component';
+  WithAuth.displayName = `withAuth(${displayName})`;
+
   return WithAuth;
 };

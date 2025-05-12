@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { CalendarIcon, ClockIcon, UserIcon, RefreshCw } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
-import { authService } from "@/services/authService"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { JoinInterviewButton } from "./JoinInterviewButton"
 import { useRouter } from "next/navigation"
@@ -29,7 +29,29 @@ export function InterviewSchedule() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setIsAuthenticated(!!session)
+    }
+    
+    checkAuth()
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsAuthenticated(!!session)
+      }
+    )
+    
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const fetchSchedules = async (forceRefresh = true) => {
     try {
@@ -78,11 +100,13 @@ export function InterviewSchedule() {
 
   // When component mounts, fetch schedules once
   useEffect(() => {
-    fetchSchedules(true) // Force refresh on initial load
-      .catch(err => {
-        console.error('Initial schedule fetch failed:', err);
-        console.debug('Error details:', { message: err.message, stack: err.stack });
-      });
+    if (isAuthenticated) {
+      fetchSchedules(true) // Force refresh on initial load
+        .catch(err => {
+          console.error('Initial schedule fetch failed:', err);
+          console.debug('Error details:', { message: err.message, stack: err.stack });
+        });
+    }
     
     // Clean up any existing interval on unmount
     return () => {
@@ -91,12 +115,12 @@ export function InterviewSchedule() {
         intervalRef.current = null;
       }
     }
-  }, [])
+  }, [isAuthenticated])
   
   // Set up auto-refresh on a separate useEffect with safeguards
   useEffect(() => {
-    // Only set up auto-refresh if we're not in an error state
-    if (!error && authService.isLoggedIn()) {
+    // Only set up auto-refresh if we're not in an error state and authenticated
+    if (!error && isAuthenticated) {
       // Clear any existing interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -104,7 +128,7 @@ export function InterviewSchedule() {
       
       // Create a new interval
       intervalRef.current = setInterval(() => {
-        if (!isLoading && !isRefreshing && authService.isLoggedIn()) {
+        if (!isLoading && !isRefreshing && isAuthenticated) {
           console.log('Auto-refreshing schedules...')
           fetchSchedules(true) // Force refresh on auto-refresh
             .catch(err => {
@@ -125,7 +149,7 @@ export function InterviewSchedule() {
         intervalRef.current = null
       }
     }
-  }, [error, isLoading])
+  }, [error, isLoading, isAuthenticated])
 
   const handleRefresh = () => {
     console.log('Manual refresh requested');
