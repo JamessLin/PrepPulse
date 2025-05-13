@@ -21,3 +21,8 @@ Peerfo.com is an AI-driven interview preparation platform featuring peer-to-peer
 - **Frontend**: React, Tailwind CSS
 - **DevOps**: Docker, Git
 
+
+Current Progress
+
+https://github.com/user-attachments/assets/1f0aacae-730e-402e-a481-5a8ca5178425
+
