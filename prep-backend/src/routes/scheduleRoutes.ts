@@ -8,7 +8,8 @@ import {
 } from '../controllers/scheduleController';
 
 import { authenticateToken } from '../middleware/auth';
-const router = Router();
+import express from 'express';
+const router = express.Router();
 
 // Create a new schedule
 router.post('/create', authenticateToken, createSchedule);

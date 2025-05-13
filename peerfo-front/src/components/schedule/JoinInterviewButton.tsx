@@ -128,7 +128,7 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
     toast.success("Match found! Redirecting to interview room...")
     
     // Store match data in localStorage or state management
-    localStorage.setItem(`interview_session_${scheduleId}`, JSON.stringify(data))
+    localStorage.setItem(`livekit_creds_${data.roomName}`, JSON.stringify({ token: data.token }))
     
     // Notify parent component
     if (onJoined) {
@@ -136,7 +136,7 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
     }
     
     // Redirect to interview room
-    router.push(`/interview/${scheduleId}`)
+    router.push(`/interview/${data.roomName}`)
   }
   
   const handleTimeout = () => {
