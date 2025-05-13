@@ -1,143 +1,162 @@
 import { AuthFormData } from "@/lib/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-// Keys for consistent storage access
-const TOKEN_KEY = 'sb-auth-token';
-const USER_DATA_KEY = 'sb-user-data';
+import { supabase } from "@/lib/supabase";
 
 /**
  * Authentication service that works with Supabase's built-in auth system
  */
 export const authService = {
   /**
-   * Check if a user is logged in based on auth token
+   * Check if a user is logged in based on the Supabase session
    */
-  isLoggedIn: (): boolean => {
-    return !!localStorage.getItem(TOKEN_KEY);
+  isLoggedIn: async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
   },
 
   /**
-   * Get the current user ID from Supabase user data
+   * Get the current user ID from Supabase session
    */
-  getCurrentUserId: (): string | null => {
-    try {
-      const userData = localStorage.getItem(USER_DATA_KEY);
-      if (!userData) return null;
-      
-      const user = JSON.parse(userData);
-      return user?.id || null;
-    } catch (error) {
-      console.error('Error getting user ID:', error);
-      return null;
-    }
+  getCurrentUserId: async (): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || null;
   },
 
   /**
-   * Get the current user data
+   * Get the current user data from Supabase
    */
-  getCurrentUser: () => {
-    try {
-      const userData = localStorage.getItem(USER_DATA_KEY);
-      if (!userData) return null;
-      
-      return JSON.parse(userData);
-    } catch (error) {
-      console.error('Error getting user data:', error);
-      return null;
-    }
+  getCurrentUser: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
   },
 
   /**
    * Get the auth token
    */
-  getToken: (): string | null => {
-    return localStorage.getItem(TOKEN_KEY);
+  getToken: async (): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
   },
 
   /**
-   * Register a new user
+   * Register a new user with Supabase
    */
   register: async (userData: AuthFormData) => {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: userData.email,
-        password: userData.password,
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-      }),
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+        }
+      }
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Registration failed');
+    if (error) {
+      throw new Error(error.message);
     }
 
-    return data;
+    return {
+      user: data.user,
+      session: data.session
+    };
   },
 
   /**
-   * Login a user
+   * Login a user with Supabase
    */
   login: async (userData: AuthFormData) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: userData.email,
-        password: userData.password,
-      }),
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: userData.email,
+      password: userData.password,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
+    if (error) {
+      throw new Error(error.message);
     }
 
-    // Store the auth token and user data
-    if (data.session?.access_token) {
-      localStorage.setItem(TOKEN_KEY, data.session.access_token);
+    return {
+      user: data.user,
+      session: data.session
+    };
+  },
+
+  /**
+   * Login with Google OAuth
+   */
+  loginWithGoogle: async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message);
     }
-    
-    if (data.user) {
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-    }
-    
+
     return data;
   },
 
   /**
-   * Logout the current user
+   * Login with GitHub OAuth
    */
-  logout: async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-
-    if (token) {
-      try {
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-      } catch (error) {
-        console.warn('Logout API error, continuing with local logout');
+  loginWithGitHub: async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
       }
+    });
+
+    if (error) {
+      throw new Error(error.message);
     }
 
-    // Clear auth data regardless of API success
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_DATA_KEY);
+    return data;
+  },
+
+  /**
+   * Logout the current user with Supabase
+   */
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
     
+    if (error) {
+      throw new Error(error.message);
+    }
+    
+    return true;
+  },
+
+  /**
+   * Reset password
+   */
+  resetPassword: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return true;
+  },
+
+  /**
+   * Update user password
+   */
+  updatePassword: async (password: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
     return true;
   }
 };

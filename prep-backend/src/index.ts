@@ -9,10 +9,9 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
-import livekitRoutes from './routes/livekit';
 import { initializeSocket } from './controllers/scheduleController'; // Import the initialization function
+import livekitRoutes from './routes/livekitRoute';
 
-//TODO: Remove livekitRoutes
 dotenv.config();
 
 const app = express();

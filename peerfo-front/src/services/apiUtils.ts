@@ -1,4 +1,4 @@
-import { authService } from './authService';
+import { supabase } from '@/lib/supabase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -13,7 +13,7 @@ export const handleResponse = async <T>(response: Response): Promise<T> => {
       // Return the exact error message or object from the server
       throw errorData.error || errorData || response.statusText || `Error ${response.status}`;
     } catch (e) {
-      // If we can't parse JSON, return the raw text if possib
+      // If we can't parse JSON, return the raw text if possible
       throw e 
     }
   }
@@ -36,12 +36,12 @@ export const handleResponse = async <T>(response: Response): Promise<T> => {
  */
 export const authFetch = async (
   input: RequestInfo, 
-  init: RequestInit = {}, 
-  providedToken?: string | null
+  init: RequestInit = {}
 ): Promise<Response> => {
   try {
-    // Use provided token or get from authService
-    const token = providedToken !== undefined ? providedToken : authService.getToken();
+    // Get current session from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     
     // Set up headers with auth token if available
     const headersObj: Record<string, string> = {
