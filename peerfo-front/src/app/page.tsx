@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, Sparkles, Shield, Star, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AIInterviewMeeting } from "@/components/ai-interview-meeting"
 
 export default function Home() {
   return (
@@ -28,22 +29,22 @@ export default function Home() {
               system.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
-              <a
+              <Link
                 href="/schedule"
                 className="relative inline-flex h-12 overflow-hidden rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 p-[1px]"
               >
                 <span className="relative flex h-full w-full items-center justify-center rounded-full bg-white px-8 text-sm font-medium text-purple-700 transition-all duration-300 ease-out hover:bg-opacity-0 hover:text-white dark:bg-gray-950 dark:text-purple-300 dark:hover:bg-opacity-0 dark:hover:text-white">
                   Request Access <ArrowRight className="ml-2 h-4 w-4" />
                 </span>
-              </a>
-              <a
+              </Link>
+              <Link
                 href="#features"
                 className="relative inline-flex h-12 overflow-hidden rounded-full border border-gray-200 p-[1px] dark:border-gray-800"
               >
                 <span className="relative flex h-full w-full items-center justify-center rounded-full bg-white px-8 text-sm font-medium text-gray-700 transition-all duration-300 ease-out hover:bg-gray-50 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900">
                   Learn More
                 </span>
-              </a>
+              </Link>
             </div>
 
             {/* Beta Stats */}
@@ -56,99 +57,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* AI Interview Preview */}
-          <div className="hidden lg:block lg:w-1/2">
-            <div className="relative ml-10 mt-10">
-              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
-                {/* Header */}
-                <div className="border-b border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-800 dark:bg-gray-800/50">
-                  <div className="flex items-center">
-                    <div className="flex space-x-2">
-                      <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                      <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
-                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                    </div>
-                    <div className="mx-auto text-sm font-medium text-gray-600 dark:text-gray-400">
-                      AI Interview Session
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
-                  <div className="mb-4 flex items-start">
-                    <div className="mr-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300">
-                      <span className="font-medium">AI</span>
-                    </div>
-                    <div className="rounded-2xl rounded-tl-none bg-gray-100 px-4 py-3 dark:bg-gray-800">
-                      <p className="text-gray-700 dark:text-gray-300">
-                        Tell me about a challenging project you worked on and how you overcame obstacles.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mb-4 flex items-start justify-end">
-                    <div className="rounded-2xl rounded-tr-none bg-purple-100 px-4 py-3 dark:bg-purple-900/30">
-                      <p className="text-gray-700 dark:text-gray-300">
-                        In my last role, I led a team that was tasked with migrating our legacy system to a modern
-                        architecture...
-                      </p>
-                    </div>
-                    <div className="ml-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
-                      <span className="font-medium">You</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4 flex items-start">
-                    <div className="mr-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300">
-                      <span className="font-medium">AI</span>
-                    </div>
-                    <div className="rounded-2xl rounded-tl-none bg-gray-100 px-4 py-3 dark:bg-gray-800">
-                      <p className="text-gray-700 dark:text-gray-300">
-                        Great start. Could you elaborate on the specific challenges you faced and your approach to
-                        solving them?
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Typing indicator */}
-                  <div className="flex items-start justify-end">
-                    <div className="rounded-2xl rounded-tr-none bg-purple-50 px-4 py-3 dark:bg-purple-900/20">
-                      <div className="flex space-x-2">
-                        <div
-                          className="h-2 w-2 animate-bounce rounded-full bg-purple-600 dark:bg-purple-400"
-                          style={{ animationDelay: "0ms" }}
-                        ></div>
-                        <div
-                          className="h-2 w-2 animate-bounce rounded-full bg-purple-600 dark:bg-purple-400"
-                          style={{ animationDelay: "150ms" }}
-                        ></div>
-                        <div
-                          className="h-2 w-2 animate-bounce rounded-full bg-purple-600 dark:bg-purple-400"
-                          style={{ animationDelay: "300ms" }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="ml-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
-                      <span className="font-medium">You</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="border-t border-gray-100 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                        <span className="mr-1 h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                        AI Interviewer
-                      </span>
-                      <span>Technical Interview</span>
-                    </div>
-                    <div className="text-sm font-medium text-purple-600 dark:text-purple-400">12:42 remaining</div>
-                  </div>
-                </div>
-              </div>
+          {/* AI Interview Meeting Preview */}
+          <div className="hidden lg:flex lg:w-1/2 lg:items-center lg:justify-center">
+            <div className="relative w-[500px] transform transition-all duration-500 hover:scale-105">
+              <AIInterviewMeeting />
 
               {/* Floating badges */}
               <div className="absolute -right-4 -top-4 rounded-full bg-white px-3 py-1 text-sm font-medium text-purple-700 shadow-md dark:bg-gray-800 dark:text-purple-300">
@@ -164,6 +76,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Rest of the page content remains the same */}
       {/* Beta Access Section */}
       <section className="bg-white py-16 dark:bg-gray-950">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -406,7 +319,7 @@ export default function Home() {
               </div>
 
               <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-                "The AI interviewer is incredibly realistic. It askedd follow-up questions that really made me think and
+                "The AI interviewer is incredibly realistic. It asked follow-up questions that really made me think and
                 helped me prepare for my actual interviews."
               </p>
               <div className="mt-8 flex items-center">
