@@ -1,4 +1,4 @@
-# Peerfo.com - AI-Powered Interview Platform
+# Peerfo.com 
 
 [![In Development](https://img.shields.io/badge/Status-In_Development-yellow.svg)](https://github.com)
 [![Build](https://img.shields.io/badge/Build-In_Progress-blue.svg)](https://github.com)
