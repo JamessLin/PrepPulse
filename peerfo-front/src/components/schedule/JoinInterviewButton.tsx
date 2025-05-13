@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Camera, Mic } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
 import { socketService } from "@/services/socketService"
 import { useRouter } from "next/navigation"
@@ -19,8 +26,13 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
   const [isJoinable, setIsJoinable] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [reason, setReason] = useState("")
+  
+  // Matchmaking states
   const [isSearching, setIsSearching] = useState(false)
   const [searchTimeRemaining, setSearchTimeRemaining] = useState<number | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [matchmakingStatusMessage, setMatchmakingStatusMessage] = useState("Searching for a match...")
+
   const [socketConnected, setSocketConnected] = useState(false)
 
   // Check if the interview is joinable
@@ -36,20 +48,14 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
         
         if (!joinableData.joinable && joinableData.timeRemaining > 0) {
           setTimeRemaining(joinableData.timeRemaining)
-          
-          // If time remaining is under 3 minutes, check more frequently
           const checkInterval = joinableData.timeRemaining <= 3 ? 10000 : 30000
-          
-          // Clear any existing interval
           if (intervalId) clearInterval(intervalId)
-          
-          // Set up recurring check
           intervalId = setInterval(checkJoinable, checkInterval)
         } else {
           setTimeRemaining(null)
-          
-          // If status is already 'searching', set the searching state
           if (joinableData.status === 'searching') {
+            // If already searching (e.g., page reloaded), open modal and start search
+            setIsModalOpen(true) 
             startSearchingState()
           }
         }
@@ -61,35 +67,34 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
 
     checkJoinable()
 
-    // Clean up on unmount
     return () => {
       if (intervalId) clearInterval(intervalId)
-      // Disconnect socket if component unmounts while searching
       if (isSearching && socketConnected) {
         socketService.disconnect()
       }
     }
-  }, [scheduleId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleId]) // Added eslint-disable for isSearching dependency to avoid re-triggering checkJoinable unnecessarily
 
-  // Setup timer for searching state
+
   const startSearchingState = () => {
+    if (isSearching) return; // Prevent multiple calls
+
     setIsSearching(true)
+    setMatchmakingStatusMessage("Searching for a match...")
     setSearchTimeRemaining(120) // 2 minutes in seconds
     
-    // Start the countdown timer
     const countdownInterval = setInterval(() => {
       setSearchTimeRemaining((prev) => {
-        // If timer reaches 0, stop the timer but don't change searching state
-        // (the socket will handle timeout event)
         if (prev === null || prev <= 0) {
           clearInterval(countdownInterval)
-          return 0
+          // Backend handles actual timeout, frontend just stops countdown
+          return 0 
         }
         return prev - 1
       })
     }, 1000)
     
-    // Connect to socket server for real-time updates
     connectToSocket()
     
     return () => {
@@ -97,123 +102,130 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
     }
   }
 
-  // Connect to the socket server
   const connectToSocket = async () => {
     if (socketConnected) return
 
     try {
-      // Connect to socket
       await socketService.connect()
       setSocketConnected(true)
+      setMatchmakingStatusMessage("Connected to matchmaking service. Waiting for pair...")
       
-      // Register event handlers
       socketService.registerHandlers({
         onMatch: handleMatch,
         onTimeout: handleTimeout,
         onError: handleSocketError
       })
       
-      // Join the matchmaking queue
       socketService.joinQueue(scheduleId)
     } catch (error) {
       console.error("Socket connection error:", error)
-      toast.error("Failed to connect to matchmaking service")
+      setMatchmakingStatusMessage("Failed to connect to matchmaking service.")
+      toast.error("Failed to connect to matchmaking. Please try again.")
+      // Consider closing modal or allowing retry here
+      // setIsModalOpen(false); 
+      // setIsSearching(false);
     }
   }
 
-  // Socket event handlers
   const handleMatch = (data: { sessionId: string; token: string; roomName: string }) => {
-    // Stop searching state
-    setIsSearching(false)
-    toast.success("Match found! Redirecting to interview room...")
+    setMatchmakingStatusMessage("Match found! Redirecting to interview room...")
+    toast.success("Match found! Redirecting...")
     
-    // Store match data in localStorage or state management
     localStorage.setItem(`livekit_creds_${data.roomName}`, JSON.stringify({ token: data.token }))
     
-    // Notify parent component
     if (onJoined) {
       onJoined(true)
     }
     
-    // Redirect to interview room
+    setIsModalOpen(false) // Close modal before redirect
+    setIsSearching(false)
     router.push(`/interview/${data.roomName}`)
+    // No need to disconnect socket here as we are navigating away
   }
   
   const handleTimeout = () => {
-    setIsSearching(false)
-    setSearchTimeRemaining(null)
-    toast.error("No match found within time limit. Please try again later.")
+    setMatchmakingStatusMessage("No match found within the time limit. Please try scheduling another interview.")
+    toast.error("No match found. Please try again later.")
     
-    // Notify parent component
     if (onJoined) {
       onJoined(false)
     }
     
-    // Disconnect socket
-    socketService.disconnect()
-    setSocketConnected(false)
+    // Don\'t close modal immediately, show the message. User can close it.
+    // setIsModalOpen(false) 
+    setIsSearching(false) 
+    setSearchTimeRemaining(null)
+    
+    if (socketConnected) {
+      socketService.disconnect()
+      setSocketConnected(false)
+    }
   }
   
   const handleSocketError = (error: any) => {
     console.error("Socket error:", error)
-    toast.error("Connection error. Please try again.")
+    setMatchmakingStatusMessage("A connection error occurred with the matchmaking service.")
+    toast.error("Matchmaking connection error. Please try again.")
+    // setIsModalOpen(false) // Optionally close modal on error
     setIsSearching(false)
-    setSocketConnected(false)
+    if (socketConnected) {
+      socketService.disconnect()
+      setSocketConnected(false)
+    }
   }
 
-  // Handle join button click
   const handleJoin = async () => {
     if (!isJoinable || isLoading || isSearching) return
 
     setIsLoading(true)
 
     try {
-      // Call API to join interview
       const result = await scheduleService.joinInterview(scheduleId)
-      
       toast.success(result.message)
-      setIsJoinable(false)
-      setIsLoading(false)
-      
-      // Start searching state
-      startSearchingState()
+      setIsJoinable(false) // Prevent re-joining immediately
+      setIsModalOpen(true) // Open the modal
+      startSearchingState()  // Start search process
       
     } catch (error: any) {
+      toast.error(`Failed to join interview: ${error.message || "Unknown error"}`)
+    } finally {
       setIsLoading(false)
-      toast.error(`Failed to join interview: ${error.message}`)
     }
   }
 
-  // Format the search time remaining
   const formatSearchTime = () => {
-    if (searchTimeRemaining === null) return ""
-    
+    if (searchTimeRemaining === null) return "0:00"
     const minutes = Math.floor(searchTimeRemaining / 60)
     const seconds = searchTimeRemaining % 60
-    
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
-  if (isSearching) {
-    return (
-      <div className="flex flex-col items-center space-y-2">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-          <span className="text-sm font-medium">Searching for a match...</span>
-        </div>
-        <p className="text-xs text-gray-500">
-          Time remaining: {formatSearchTime()}
-        </p>
-        {!socketConnected && (
-          <p className="text-xs text-red-500">
-            Connecting to matchmaking service...
-          </p>
-        )}
-      </div>
-    )
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    // If closing modal while still "searching" (e.g. user clicks outside), 
+    // it implies cancelling the search.
+    if (isSearching) {
+      setIsSearching(false)
+      setSearchTimeRemaining(null)
+      if (socketConnected) {
+        socketService.disconnect() // Clean up socket connection
+        setSocketConnected(false)
+      }
+      // Optionally, inform the backend about the cancellation if needed.
+      // For now, schedule status might remain "searching" until backend timeout.
+      // Or, we might need a cancel API.
+      toast.info("Matchmaking cancelled.")
+    }
   }
 
-  if (timeRemaining !== null && timeRemaining > 0) {
+  if (isSearching && !isModalOpen) {
+    // This case might occur if a page reloads and state is 'searching' 
+    // but modal didn't open from useEffect yet. Or if modal is closed prematurely.
+    // It might be better to ensure modal is the single source of truth for searching UI.
+    // For now, we'll rely on the modal. If not searching, show regular button.
+  }
+
+  if (timeRemaining !== null && timeRemaining > 0 && !isJoinable) {
     return (
       <Button 
         variant="outline" 
@@ -226,21 +238,69 @@ export function JoinInterviewButton({ scheduleId, onJoined }: JoinInterviewButto
   }
   
   return (
-    <Button
-      onClick={handleJoin}
-      disabled={!isJoinable || isLoading}
-      className={`w-full ${!isJoinable ? 'bg-gray-200 text-gray-500' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Joining...
-        </>
-      ) : isJoinable ? (
-        "Join Interview"
-      ) : (
-        reason || "Not available"
-      )}
-    </Button>
+    <>
+      <Button
+        onClick={handleJoin}
+        disabled={!isJoinable || isLoading || isSearching}
+        className={`w-full ${!isJoinable ? 'bg-gray-200 text-gray-500' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Joining...
+          </>
+        ) : isJoinable ? (
+          "Join Interview"
+        ) : (
+          reason || "Not available"
+        )}
+      </Button>
+
+      <Dialog open={isModalOpen} onOpenChange={handleModalClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl mb-2">
+              {searchTimeRemaining === 0 && matchmakingStatusMessage.includes("No match found") 
+                ? "Match Not Found" 
+                : "Finding Your Interview Partner"}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {matchmakingStatusMessage}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-6 flex flex-col items-center space-y-4">
+            {isSearching && searchTimeRemaining !== null && searchTimeRemaining > 0 && (
+              <>
+                <Loader2 className="h-12 w-12 animate-spin text-purple-600" />
+                <p className="text-3xl font-semibold">{formatSearchTime()}</p>
+                <p className="text-sm text-gray-500">Time remaining</p>
+              </>
+            )}
+            {(searchTimeRemaining === 0 && !matchmakingStatusMessage.includes("Redirecting")) && (
+                <p className="text-red-500 font-medium">
+                    Please close this window and try scheduling again later.
+                </p>
+            )}
+             {matchmakingStatusMessage.includes("Redirecting") && (
+                <Loader2 className="h-12 w-12 animate-spin text-green-500" />
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+            <div className="flex items-center space-x-2 p-3 bg-slate-100 rounded-md">
+              <Camera className="h-5 w-5 text-purple-600" />
+              <span>Camera Ready?</span>
+            </div>
+            <div className="flex items-center space-x-2 p-3 bg-slate-100 rounded-md">
+              <Mic className="h-5 w-5 text-purple-600" />
+              <span>Mic On?</span>
+            </div>
+          </div>
+          
+          {/* No explicit close button in DialogFooter, user can click X or outside */}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 } 
