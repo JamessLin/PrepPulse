@@ -9,7 +9,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
-import { initializeSocket } from './controllers/scheduleController'; // Import the initialization function
+import { initializeSocket } from './services/socketHandler';
 import livekitRoutes from './routes/livekitRoute';
 
 dotenv.config();
