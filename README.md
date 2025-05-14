@@ -1,4 +1,4 @@
-# Peerfo.com - AI-Powered Interview Platform
+# Peerfo.com 
 
 [![In Development](https://img.shields.io/badge/Status-In_Development-yellow.svg)](https://github.com)
 [![Build](https://img.shields.io/badge/Build-In_Progress-blue.svg)](https://github.com)
@@ -20,4 +20,9 @@ Peerfo.com is an AI-driven interview preparation platform featuring peer-to-peer
 - **Backend**: Node.js, Supabase
 - **Frontend**: React, Tailwind CSS
 - **DevOps**: Docker, Git
+
+
+Current Progress
+
+https://github.com/user-attachments/assets/1f0aacae-730e-402e-a481-5a8ca5178425
 
