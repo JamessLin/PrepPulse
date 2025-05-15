@@ -173,7 +173,10 @@ export function InterviewSchedule() {
   }, [isAuthenticated, isLoading]); // Add dependencies
 
   // Get human-readable interview type
-  const getTypeName = (type: string) => {
+  const getTypeName = (type: string | null | undefined) => {
+    if (!type) {
+      return 'Unknown Type'; 
+    }
     switch (type) {
       case 'technical':
         return 'Technical'
@@ -182,7 +185,10 @@ export function InterviewSchedule() {
       case 'system-design':
         return 'System Design'
       default:
-        return type.charAt(0).toUpperCase() + type.slice(1)
+        if (typeof type === 'string' && type.length > 0) {
+          return type.charAt(0).toUpperCase() + type.slice(1);
+        }
+        return 'Invalid Type'; // Fallback for unexpected type values
     }
   }
 

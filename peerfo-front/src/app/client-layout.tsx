@@ -36,7 +36,7 @@ export default function ClientLayout({
                 >
                   Schedule
                 </Link>
-                <Link href="#" className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600">
+                <Link href="/d" className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600">
                   Resources
                 </Link>
                 <Link href="#" className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-600">

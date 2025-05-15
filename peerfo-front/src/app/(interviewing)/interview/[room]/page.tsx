@@ -1,4 +1,3 @@
-// app/dashboard/interview/[room]/page.tsx
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -121,7 +120,7 @@ export default function InterviewRoomPage() {
 
   // --- Render LiveKit Room ---
   return (
-    <div style={{ height: '100vh', width: '100vw' }} data-lk-theme="default">
+    <div style={{ height: '100vh', width: '100vw', position: 'relative' }} data-lk-theme="default">
       <LiveKitRoom
         serverUrl={liveKitUrl}
         token={token}
@@ -146,6 +145,27 @@ export default function InterviewRoomPage() {
         <ControlBar controls={{ microphone: true, camera: true, screenShare: false, chat: true, leave: true }} /> 
         */}
       </LiveKitRoom>
+
+      {/* Placeholder for AI Generated Questions */}
+      <div 
+        style={{ 
+          position: 'absolute', 
+          top: '20px', 
+          right: '20px', 
+          width: '300px', 
+          minHeight: '150px',
+          background: 'rgba(255, 255, 255, 0.9)', 
+          padding: '15px', 
+          borderRadius: '8px', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          color: '#333' // Ensuring text is visible on light background
+        }}
+      >
+        <h3 style={{ marginTop: 0, marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>AI Generated Questions</h3>
+        <p>Question 1 will appear here...</p>
+        <p>Question 2 will appear here...</p>
+        {/* More content can be added later */}
+      </div>
     </div>
   );
-}
+} 

@@ -11,7 +11,7 @@ import {
   isToday,
   isBefore
 } from "date-fns"
-import { toast } from "sonner"
+import { toast, ToastContainer } from "react-toastify"
 import { useRouter } from "next/navigation"
 
 import { InterviewTypeSelector, INTERVIEW_TYPES } from "@/components/schedule/InterviewTypeSelector"
@@ -25,6 +25,7 @@ import { InterviewSchedule } from "@/components/schedule/interview-schedule"
 import { ConfirmationModal } from "@/components/schedule/ConfirmationModal"
 import { scheduleService } from "@/services/scheduleService"
 import { AuthProvider, useAuth } from "@/context/authContext"
+import { useSocket } from "@/context/socketContext"
 
 // Fixed time slots for every day (or you could get them from your service)
 const TIME_SLOTS = ["7:00 AM", "11:00 AM", "3:00 PM", "9:00 PM"]
@@ -38,6 +39,7 @@ const MAX_BOOKING_DATE = addDays(TODAY, MAX_BOOKING_DAYS)
 function SchedulePageContent() {
   const router = useRouter()
   const { user, session } = useAuth()
+  const { socket, isConnected } = useSocket()
 
   const [currentDate, setCurrentDate] = useState(TODAY)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -52,8 +54,6 @@ function SchedulePageContent() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [friendEmail, setFriendEmail] = useState("")
   const [scheduleId, setScheduleId] = useState<string>("")
-
-  const scheduleButtonRef = useRef<HTMLButtonElement>(null)
 
   // Check if we can navigate to previous week (only if it contains today or future dates)
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Start from Monday
@@ -179,10 +179,13 @@ function SchedulePageContent() {
       setShowConfetti(true)
       setIsScheduled(true)
 
-      toast.success("Interview Scheduled!", {
-        description: `Your ${selectedTypeName} interview (${selectedModeName}) is scheduled for ${selectedDate.toLocaleDateString()} at ${selectedTime}.`,
-        duration: 5000,
-      })
+      toast.success(
+        <div>
+          <div>Interview Scheduled!</div>
+          <div style={{ fontSize: '0.9em', opacity: 0.8 }}>{`Your ${selectedTypeName} interview (${selectedModeName}) is scheduled for ${selectedDate.toLocaleDateString()} at ${selectedTime}.`}</div>
+        </div>,
+        { autoClose: 5000 }
+      )
 
       setIsScheduling(false)
       setShowFeedbackOption(true)
@@ -196,10 +199,13 @@ function SchedulePageContent() {
       }, 3000)
     } catch (error: any) {
       console.error("Scheduling error:", error)
-      toast.error("Failed to schedule interview", {
-        description: error.message || "Please try again later",
-        duration: 5000
-      })
+      toast.error(
+        <div>
+          <div>Failed to schedule interview</div>
+          <div style={{ fontSize: '0.9em', opacity: 0.8 }}>{error.message || "Please try again later"}</div>
+        </div>,
+        { autoClose: 5000 }
+      )
     } finally {
       setIsScheduling(false)
     }
@@ -231,6 +237,91 @@ function SchedulePageContent() {
 
   const handleFeedbackOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWantsFeedback(e.target.checked)
+  }
+
+  const handleTestJoinP2P = async () => {
+    if (!user || !user.id) {
+      toast.error("Please sign in to test joining the queue.")
+      router.push('/auth')
+      return
+    }
+
+    if (!socket) {
+      toast.error("Socket not connected. Cannot join queue.")
+      return
+    }
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBase) {
+      toast.error("API URL is not configured. Please set NEXT_PUBLIC_API_URL.");
+      console.error("Error: NEXT_PUBLIC_API_URL is not set.");
+      return;
+    }
+
+    const testScheduleId = '4ecb09f8-e938-43e1-993c-ff4d2fbaf5f3';
+    const endpoint = `${apiBase}/schedules/test-join-queue`;
+
+    try {
+      toast.info(`Attempting to join P2P queue via: ${endpoint}`);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          scheduleId: testScheduleId,
+          userId: user.id,
+        }),
+      });
+
+      if (!response.ok) {
+        // Try to parse error as JSON, but fallback if it's not
+        let errorDetails = `Request failed with status ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error?.message || errorData.error || errorData.message || JSON.stringify(errorData);
+        } catch (e) {
+          // If response is not JSON (e.g. HTML error page), read as text
+          errorDetails = await response.text(); 
+          console.error("Non-JSON error response from backend:", errorDetails); 
+        }
+        throw new Error(errorDetails);
+      }
+
+      const result = await response.json();
+      toast.success(result.message || "Successfully processed by test endpoint.");
+
+      // IMPORTANT: Use the scheduleId returned from the backend for the socket event
+      const newScheduleIdFromServer = result.scheduleId;
+      if (!newScheduleIdFromServer) {
+        console.error('Backend did not return a scheduleId for the test queue join.');
+        toast.error(
+          <div>
+            <div>Failed to join P2P test queue.</div>
+            <div style={{ fontSize: '0.9em', opacity: 0.8 }}>Missing scheduleId from server response.</div>
+          </div>
+        );
+        return;
+      }
+
+      socket.emit('joinQueue', { scheduleId: newScheduleIdFromServer, userId: user.id });
+      toast.info(
+        <div>
+          <div>joinQueue event emitted to socket server.</div>
+          <div style={{ fontSize: '0.9em', opacity: 0.8 }}>{`Generated Schedule ID: ${newScheduleIdFromServer}, User ID: ${user.id}`}</div>
+        </div>
+      );
+
+    } catch (error: any) {
+      console.error("Test Join P2P error:", error)
+      toast.error(
+        <div>
+          <div>Failed to join P2P test queue.</div>
+          <div style={{ fontSize: '0.9em', opacity: 0.8 }}>{error.message || "An unexpected error occurred."}</div>
+        </div>
+      )
+    }
   }
 
   return (
@@ -297,11 +388,11 @@ function SchedulePageContent() {
               isScheduled={isScheduled}
               selectedMode={selectedMode}
               friendEmail={friendEmail}
-              onCancel={handleCancel}
-              onSchedule={handleSchedule}
               showFeedbackOption={showFeedbackOption}
               wantsFeedback={wantsFeedback}
               onFeedbackOptionChange={handleFeedbackOptionChange}
+              onCancel={handleCancel}
+              onSchedule={handleSchedule}
             />
           </div>
         </div>
@@ -310,19 +401,72 @@ function SchedulePageContent() {
         <div className="mx-auto mt-16 max-w-5xl">
           <InterviewSchedule />
         </div>
-      </div>
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmationModal}
-        onClose={handleCloseConfirmationModal}
-        interviewType={INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name || ""}
-        date={selectedDate}
-        time={selectedTime}
-        interviewMode={DEFAULT_INTERVIEW_MODES.find((mode) => mode.id === selectedMode)?.name || ""}
-        scheduleId={scheduleId}
-        onViewSchedule={handleViewSchedule}
-      />
+        {/* Main Scheduling Interface */}
+        <div className="mt-10 grid grid-cols-1 gap-x-12 gap-y-10 md:grid-cols-3 lg:gap-x-16">
+          {/* Left Column: Date, Time, Type, Mode */}
+          {/* ... existing code ... */}
+
+          {/* Right Column: Summary and Actions */}
+          <div className="md:col-span-1">
+            <div className="sticky top-28 rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800/50">
+              <h2 className="mb-6 border-b border-gray-200 pb-4 text-2xl font-semibold text-gray-800 dark:border-gray-700 dark:text-white">
+                Your Interview
+              </h2>
+              {selectedDate && selectedTime && (
+                <InterviewSummary
+                  selectedDate={selectedDate}
+                  selectedTime={selectedTime}
+                  selectedType={selectedType}
+                  selectedMode={selectedMode}
+                  friendEmail={friendEmail}
+                />
+              )}
+              <ScheduleActions
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                isScheduling={isScheduling}
+                onSchedule={handleSchedule}
+                onCancel={handleCancel}
+                isScheduled={isScheduled}
+                selectedMode={selectedMode}
+                friendEmail={friendEmail}
+                showFeedbackOption={showFeedbackOption}
+                wantsFeedback={wantsFeedback}
+                onFeedbackOptionChange={handleFeedbackOptionChange}
+              />
+              {/* Added: Test Button */}
+              <div className="mt-6 border-t border-gray-200 pt-4 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={handleTestJoinP2P}
+                  className="w-full rounded-md bg-yellow-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-yellow-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-600 disabled:opacity-50"
+                  disabled={!user || !socket}
+                >
+                  Dev: Test Join P2P (Bypass Time)
+                </button>
+                {(!user || !socket) && (
+                  <p className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
+                    {!user ? "Sign in to use test features." : "Socket not connected."}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showConfirmationModal}
+          onClose={handleCloseConfirmationModal}
+          interviewType={INTERVIEW_TYPES.find((type) => type.id === selectedType)?.name || ""}
+          date={selectedDate}
+          time={selectedTime}
+          interviewMode={DEFAULT_INTERVIEW_MODES.find((mode) => mode.id === selectedMode)?.name || ""}
+          scheduleId={scheduleId}
+          onViewSchedule={handleViewSchedule}
+        />
+      </div>
     </div>
   )
 }

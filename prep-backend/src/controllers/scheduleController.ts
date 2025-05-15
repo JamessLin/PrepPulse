@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase, createSupabaseClient } from '../config/supabase';
+import { v4 as uuidv4 } from 'uuid';
 
 //TODO: SEPERATE MATCHMAKING AND QUEUE SERVICE
 
@@ -464,5 +465,86 @@ export const checkScheduleJoinable = async (req: AuthRequest, res: Response): Pr
   } catch (error: any) {
     console.error('Check schedule joinable error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const testJoinQueue = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const authenticatedUser = req.user;
+    const authHeader = req.headers.authorization;
+    const supabase = createSupabaseClient(authHeader);
+
+    if (!authenticatedUser || !authenticatedUser.id) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const { userId: bodyUserId } = req.body;
+
+    if (!bodyUserId) {
+      res.status(400).json({ error: 'userId in body is required for test queue' });
+      return;
+    }
+
+    const newGeneratedScheduleId = uuidv4();
+    const currentTime = new Date().toISOString();
+    const defaultInterviewType = 'technical';
+
+    const { data: newSchedule, error: createScheduleError } = await supabase
+      .from('schedules')
+      .insert({
+        id: newGeneratedScheduleId,
+        user_id: bodyUserId,
+        scheduled_time: currentTime,
+        interview_type: defaultInterviewType,
+        interview_mode: 'peer-to-peer',
+        status: 'searching',
+        created_at: currentTime,
+        updated_at: currentTime,
+      })
+      .select('id, interview_type')
+      .single();
+
+    if (createScheduleError) {
+      console.error('Error creating test schedule:', createScheduleError.message);
+      res.status(500).json({ error: 'Failed to create test schedule', details: createScheduleError.message });
+      return;
+    }
+
+    if (!newSchedule) {
+        res.status(500).json({ error: 'Failed to retrieve created test schedule data' });
+        return;
+    }
+
+    const { error: upsertError } = await supabase
+      .from('match_queue')
+      .upsert(
+        {
+          schedule_id: newGeneratedScheduleId,
+          user_id: bodyUserId,
+          interview_type: newSchedule.interview_type,
+          status: 'searching',
+          created_at: currentTime,
+          updated_at: currentTime,
+        },
+        { onConflict: 'schedule_id', ignoreDuplicates: false }
+      );
+
+    if (upsertError) {
+      console.error('Error upserting into match_queue for test schedule:', upsertError.message);
+      res.status(500).json({ error: 'Failed to add to match queue with test schedule', details: upsertError.message });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Successfully created test schedule and joined queue.',
+      scheduleId: newGeneratedScheduleId,
+      userId: bodyUserId,
+      interviewType: newSchedule.interview_type
+    });
+
+  } catch (error: any) {
+    console.error('Test join queue (auto-create) error:', error.message);
+    res.status(500).json({ error: 'Internal server error during test join queue' });
   }
 };

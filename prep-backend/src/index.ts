@@ -42,9 +42,24 @@ app.use('/api/resume', resumeRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/livekit', livekitRoutes);
 
-
 app.get('/', (req, res) => {
   res.send('Express + TypeScript + Supabase Backend');
+});
+
+// Global Error Handling Middleware
+// This should be defined after all app.use() calls for routes
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("[GLOBAL ERROR HANDLER]:", err.stack || err); // Log the full error stack or the error itself
+
+  const statusCode = err.statusCode || err.status || 500; // Use err.status if available (e.g. from http-errors module)
+  const message = err.message || 'Internal Server Error';
+
+  res.status(statusCode).json({
+    error: {
+      message: message,
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }), // Include stack trace in development
+    }
+  });
 });
 
 // Initialize Socket.IO listeners after io is set up

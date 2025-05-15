@@ -8,6 +8,7 @@ interface SocketHandlers {
   onTimeout?: () => void;
   onError?: (error: any) => void;
   onAuthRequired?: () => void;
+  onQueueJoined?: (data: { scheduleId: string; queueName: string }) => void;
 }
 
 class SocketService {
@@ -44,7 +45,7 @@ class SocketService {
         }
 
         // Get user ID for tracking (but don't require it)
-        const userId = authService.getCurrentUserId();
+        const userId = await authService.getCurrentUserId();
         if (!userId) {
           console.log('Socket connection: No user ID available, proceeding anyway');
           // We'll continue without user ID - API should handle this
@@ -115,6 +116,14 @@ class SocketService {
       console.log('Matchmaking timed out');
       if (this.handlers.onTimeout) {
         this.handlers.onTimeout();
+      }
+    });
+
+    // Queue joined event - when the server confirms the user has joined the queue
+    this.socket.on('queueJoinedSuccessfully', (data) => {
+      console.log('Successfully joined queue:', data);
+      if (this.handlers.onQueueJoined) {
+        this.handlers.onQueueJoined(data);
       }
     });
   }
